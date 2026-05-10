@@ -367,7 +367,7 @@ export default function HeroScene({ onNavigate }) {
       <nav style={{ position:'absolute', top:0, left:0, right:0, zIndex:10, display:'flex',
         alignItems:'center', justifyContent:'space-between', padding:'1.2rem 2.5rem',
         borderBottom:`1px solid rgba(212,193,154,0.12)`, background:'rgba(5,3,9,0.6)', backdropFilter:'blur(12px)' }}>
-        <span style={{ color: COLORS.goldPaleHex, fontSize:'0.7rem', letterSpacing:'0.35em' }}>[ PORTFOLIO.SYS ]</span>
+        <span style={{ color: COLORS.goldPaleHex, fontSize:'0.7rem', letterSpacing:'0.35em' }}>[ PORTFOLIO ]</span>
         <div style={{ display:'flex', gap:'2rem' }}>
           {NAV_ITEMS.map(item => (
             <span key={item} onClick={() => onNavigate?.(item.toLowerCase())}
@@ -395,9 +395,9 @@ export default function HeroScene({ onNavigate }) {
           background:'linear-gradient(180deg, #f5efe0 0%, #d4c19a 60%, #8a6f3f 100%)',
           WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
           filter:`drop-shadow(0 0 30px rgba(212,193,154,0.35))` }}>
-          JOHN<br />
+          KEVINE<br />
           <span style={{ background:'linear-gradient(180deg, #d4c19a 0%, #8a6f3f 100%)',
-            WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>DOE</span>
+            WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>FRAY</span>
         </h1>
 
         <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', height:'1.8rem', margin:'1.4rem 0 0.2rem' }}>

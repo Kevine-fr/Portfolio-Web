@@ -154,7 +154,7 @@ export default function HeroSceneFallback({ onNavigate }) {
         borderBottom: '1px solid rgba(212,193,154,0.12)', background: 'rgba(5,3,9,0.6)',
         backdropFilter: 'blur(12px)',
       }}>
-        <span style={{ color: '#d4c19a', fontSize: '0.7rem', letterSpacing: '0.35em' }}>[ PORTFOLIO.SYS ]</span>
+        <span style={{ color: '#d4c19a', fontSize: '0.7rem', letterSpacing: '0.35em' }}>[ PORTFOLIO ]</span>
         <div style={{ display: 'flex', gap: '2rem' }}>
           {NAV_ITEMS.map(item => (
             <span key={item} onClick={() => onNavigate?.(item.toLowerCase())}
@@ -186,11 +186,11 @@ export default function HeroSceneFallback({ onNavigate }) {
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           filter: 'drop-shadow(0 0 30px rgba(212,193,154,0.35))',
         }}>
-          JOHN<br />
+          KEVINE<br />
           <span style={{
             background: 'linear-gradient(180deg, #d4c19a 0%, #8a6f3f 100%)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          }}>DOE</span>
+          }}>FRAY</span>
         </h1>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', height: '1.8rem', margin: '1.4rem 0 0.2rem' }}>
