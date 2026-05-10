@@ -8,9 +8,9 @@ services:
     expose:
       - "80"
     networks:
-      - backend
+      - web
 
 networks:
-  backend:
+  web:
     external: true
-    name: backend
+    name: web
