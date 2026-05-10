@@ -1,0 +1,295 @@
+/* ─── Racine ─────────────────────────────────────────────────────────────────*/
+.root {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  background: linear-gradient(135deg, #020408 0%, #060118 50%, #020408 100%);
+  overflow: hidden;
+  font-family: 'Courier New', Courier, monospace;
+  color: #fff;
+}
+
+/* ─── Canvas Three.js ────────────────────────────────────────────────────────*/
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* ─── Scan-lines ─────────────────────────────────────────────────────────────*/
+.scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 0, 0, 0.04) 3px,
+    rgba(0, 0, 0, 0.04) 4px
+  );
+}
+
+/* ─── Navigation ─────────────────────────────────────────────────────────────*/
+.nav {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.2rem 2.5rem;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.navLogo {
+  color: #00ffff;
+  font-size: 0.7rem;
+  letter-spacing: 0.35em;
+}
+
+.navList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 2rem;
+}
+
+.navItem {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.navItem:hover {
+  color: #00ffff;
+}
+
+/* ─── Hero text block ────────────────────────────────────────────────────────*/
+.heroText {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 3rem;
+  max-width: 580px;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 1.2s ease, transform 1.2s ease;
+}
+
+.heroText.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.initLine {
+  color: #00ffff;
+  font-size: 0.68rem;
+  letter-spacing: 0.4em;
+  margin: 0 0 1.2rem;
+  opacity: 0.7;
+}
+
+.heroName {
+  margin: 0;
+  font-size: clamp(3rem, 7vw, 5.8rem);
+  font-weight: 900;
+  line-height: 0.95;
+  font-family: 'Arial Black', 'Arial Bold', sans-serif;
+  letter-spacing: -0.03em;
+  text-shadow: 0 0 60px rgba(0, 255, 255, 0.25), 0 0 120px rgba(0, 255, 255, 0.08);
+}
+
+.nameAccent {
+  color: #00ffff;
+}
+
+/* ─── Typing role ────────────────────────────────────────────────────────────*/
+.roleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  height: 1.8rem;
+  margin: 1.4rem 0 0.2rem;
+}
+
+.roleSlash {
+  color: #8800ff;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.roleText {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  letter-spacing: 0.06em;
+}
+
+.cursor {
+  color: #00ffff;
+  font-size: 1rem;
+  animation: blink 0.9s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* ─── Description ────────────────────────────────────────────────────────────*/
+.description {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.78rem;
+  margin: 1.2rem 0 2rem;
+  line-height: 1.85;
+  max-width: 360px;
+}
+
+/* ─── CTA buttons ────────────────────────────────────────────────────────────*/
+.ctaRow {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.btnOutline {
+  padding: 0.7rem 1.6rem;
+  background: transparent;
+  border: 1px solid #00ffff;
+  color: #00ffff;
+  cursor: pointer;
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  font-family: 'Courier New', monospace;
+  transition: background 0.2s ease;
+}
+
+.btnOutline:hover {
+  background: rgba(0, 255, 255, 0.08);
+}
+
+.btnSolid {
+  padding: 0.7rem 1.6rem;
+  background: #00ffff;
+  border: none;
+  color: #000;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  font-family: 'Courier New', monospace;
+  transition: opacity 0.2s;
+}
+
+.btnSolid:hover {
+  opacity: 0.85;
+}
+
+/* ─── Stats ──────────────────────────────────────────────────────────────────*/
+.stats {
+  display: flex;
+  gap: 2.5rem;
+  margin-top: 2.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding-top: 1.5rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.statValue {
+  color: #00ffff;
+  font-size: 1.5rem;
+  font-weight: 900;
+}
+
+.statLabel {
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+}
+
+/* ─── Scroll indicator ───────────────────────────────────────────────────────*/
+.scrollIndicator {
+  position: absolute;
+  right: 2.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  opacity: 0.35;
+}
+
+.scrollText {
+  writing-mode: vertical-rl;
+  color: rgba(0, 255, 255, 0.6);
+  font-size: 0.58rem;
+  letter-spacing: 0.3em;
+}
+
+.scrollLine {
+  width: 1px;
+  height: 80px;
+  background: linear-gradient(to bottom, rgba(0, 255, 255, 0.6), transparent);
+}
+
+/* ─── Status bar ─────────────────────────────────────────────────────────────*/
+.statusBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 2.5rem;
+  border-top: 1px solid rgba(0, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.statusReady {
+  color: rgba(0, 255, 255, 0.5);
+  font-size: 0.6rem;
+  letter-spacing: 0.25em;
+}
+
+.statusCoords {
+  color: rgba(255, 255, 255, 0.15);
+  font-size: 0.6rem;
+}
+
+.statusLib {
+  color: rgba(136, 0, 255, 0.6);
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────────*/
+@media (max-width: 640px) {
+  .heroText  { padding: 0 1.5rem; max-width: 100%; }
+  .nav       { padding: 1rem 1.5rem; }
+  .navList   { display: none; }
+  .scrollIndicator { display: none; }
+  .stats     { gap: 1.5rem; }
+}
