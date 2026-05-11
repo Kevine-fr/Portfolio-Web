@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { COLORS, getPerformanceTier, easeInOutCubic } from '../../styles/tokens';
 
-// ─── Texture etoile (douce) ─────────────────────────────────────────────────
+// ─── Texture etoile douce ───────────────────────────────────────────────────
 function makeStarTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = 64;
@@ -17,7 +17,7 @@ function makeStarTexture() {
   return new THREE.CanvasTexture(c);
 }
 
-// ─── Texture etoile brillante AMELIOREE (halo + spikes Hubble) ──────────────
+// ─── Texture etoile brillante avec halo + spikes Hubble ─────────────────────
 function makeBrightStarTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = 256;
@@ -91,7 +91,42 @@ function makeEnvironmentMap(tier) {
   return tex;
 }
 
+// ─── Champ d'etoiles LOINTAIN (fond galactique global, voyage entre astres) ─
 function makeStarfield(starTex, tier) {
+  const N = tier === 'low' ? 3000 : tier === 'medium' ? 6000 : 10000;
+  const pos = new Float32Array(N * 3);
+  const col = new Float32Array(N * 3);
+  const palette = [
+    [1.0, 0.97, 0.88], [0.95, 0.92, 0.82],
+    [1.0, 0.88, 0.65], [0.85, 0.92, 1.0],
+  ];
+  for (let i = 0; i < N; i++) {
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(Math.random() * 2 - 1);
+    const r = 50 + Math.pow(Math.random(), 0.4) * 200;
+    pos[i*3]   = Math.sin(phi) * Math.cos(theta) * r;
+    pos[i*3+1] = Math.sin(phi) * Math.sin(theta) * r * 0.6;
+    pos[i*3+2] = Math.cos(phi) * r - 60;
+    const c = palette[Math.floor(Math.random() * palette.length)];
+    const bright = 0.4 + Math.random() * 0.6;
+    col[i*3]   = c[0] * bright;
+    col[i*3+1] = c[1] * bright;
+    col[i*3+2] = c[2] * bright;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+  return new THREE.Points(geo, new THREE.PointsMaterial({
+    size: 0.3, vertexColors: true, map: starTex,
+    transparent: true, depthWrite: false,
+    blending: THREE.AdditiveBlending, opacity: 1.0,
+  }));
+}
+
+// ─── Champ d'etoiles LOCAL (proche, autour de chaque astre — comme code 1) ──
+// Reproduit exactement la distribution du code 1 : disque en anneau autour
+// du centre avec yspread vertical, taille 0.2, palette chaude/froide melangee.
+function makeLocalStarfield(starTex, tier, center) {
   const N = tier === 'low' ? 1500 : tier === 'medium' ? 3000 : 5000;
   const pos = new Float32Array(N * 3);
   const col = new Float32Array(N * 3);
@@ -103,9 +138,9 @@ function makeStarfield(starTex, tier) {
     const theta = Math.random() * Math.PI * 2;
     const r = 8 + Math.pow(Math.random(), 0.4) * 30;
     const yspread = (Math.random() - 0.5) * 25;
-    pos[i*3]   = Math.cos(theta) * r;
-    pos[i*3+1] = yspread;
-    pos[i*3+2] = Math.sin(theta) * r - 5;
+    pos[i*3]   = center.x + Math.cos(theta) * r;
+    pos[i*3+1] = center.y + yspread;
+    pos[i*3+2] = center.z + Math.sin(theta) * r - 5;
     const c = palette[Math.floor(Math.random() * palette.length)];
     const bright = 0.4 + Math.random() * 0.6;
     col[i*3]   = c[0] * bright;
@@ -122,6 +157,7 @@ function makeStarfield(starTex, tier) {
   }));
 }
 
+// ─── CONSTELLATIONS reelles ─────────────────────────────────────────────────
 const CONSTELLATIONS = [
   {
     name: 'GRANDE OURSE',
@@ -161,9 +197,35 @@ const CONSTELLATIONS = [
     connections: [[0,1],[1,2],[2,3],[3,4]],
   },
 ];
-
 const magToSize = (mag) => Math.max(0.06, 0.18 - mag * 0.025);
 const magToOpacity = (mag) => Math.max(0.55, 1.0 - mag * 0.08);
+
+// ─── POSITIONS DES 5 ASTRES dans l'espace ────────────────────────────────────
+const ASTRE_POSITIONS = [
+  new THREE.Vector3(   0,   0,    0),    // 0 HERO
+  new THREE.Vector3( -45,   6,  -35),    // 1 ABOUT
+  new THREE.Vector3(  55,  -8,  -70),    // 2 SKILLS
+  new THREE.Vector3( -35,  22,  -95),    // 3 PROJECTS
+  new THREE.Vector3(  65,   0, -130),    // 4 CONTACT
+];
+
+function buildCurvePoints() {
+  const curves = {};
+  for (let i = 0; i < ASTRE_POSITIONS.length; i++) {
+    for (let j = 0; j < ASTRE_POSITIONS.length; j++) {
+      if (i === j) continue;
+      const a = ASTRE_POSITIONS[i];
+      const b = ASTRE_POSITIONS[j];
+      const mid = a.clone().lerp(b, 0.5);
+      const dir = b.clone().sub(a).normalize();
+      const perp = new THREE.Vector3(-dir.z, 0, dir.x).multiplyScalar(8);
+      perp.y += 5;
+      mid.add(perp);
+      curves[`${i}-${j}`] = mid;
+    }
+  }
+  return curves;
+}
 
 export default function PersistentScene({ activeSectionRef }) {
   const canvasRef = useRef(null);
@@ -172,6 +234,9 @@ export default function PersistentScene({ activeSectionRef }) {
     currentMorph: 0,
     targetMorph: 0,
     morphProgress: 1,
+    cameraTravelFrom: ASTRE_POSITIONS[0].clone(),
+    cameraTravelTo:   ASTRE_POSITIONS[0].clone(),
+    cameraTravelCtrl: ASTRE_POSITIONS[0].clone(),
   });
 
   useEffect(() => {
@@ -194,8 +259,10 @@ export default function PersistentScene({ activeSectionRef }) {
     renderer.toneMappingExposure = 1.2;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 100);
-    camera.position.set(0, 0, 7);
+    const camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 500);
+    camera.position.copy(ASTRE_POSITIONS[0]).add(new THREE.Vector3(0, 0, 7));
+
+    const curvePoints = buildCurvePoints();
 
     const envMap = makeEnvironmentMap(tier);
     scene.environment = envMap;
@@ -204,27 +271,24 @@ export default function PersistentScene({ activeSectionRef }) {
     const keyLight  = new THREE.PointLight(COLORS.goldGlow, 4.5, 25);
     const fillLight = new THREE.PointLight(COLORS.goldDeep, 2.5, 20);
     const rimLight  = new THREE.PointLight(COLORS.goldGlow, 3.0, 15);
-    keyLight.position.set(2, 5, 4);
-    fillLight.position.set(4, -1, 3);
-    rimLight.position.set(0, 0, -3);
     scene.add(keyLight); scene.add(fillLight); scene.add(rimLight);
 
     const starTex = makeStarTexture();
     const brightStarTex = makeBrightStarTexture();
+
+    // ── FOND GALACTIQUE LOINTAIN (grands voyages) ─────────────────────────────
     const starfield = makeStarfield(starTex, tier);
     scene.add(starfield);
 
-    // ── SPHERE PRINCIPALE ────────────────────────────────────────────────────
-    const sphereSegs = tier === 'low' ? 32 : tier === 'medium' ? 64 : 96;
-    const sphereGeo = new THREE.SphereGeometry(1.8, sphereSegs, sphereSegs);
-    const sphereMat = new THREE.MeshStandardMaterial({
-      color: COLORS.blackMetal, metalness: 1.0, roughness: 0.08,
-      envMap, envMapIntensity: 2.5,
+    // ── ETOILES LOCALES (une par astre, meme distribution que code 1) ─────────
+    // Chaque astre a son propre champ d'etoiles proches, identique au code 1.
+    const localStarfields = ASTRE_POSITIONS.map((pos) => {
+      const sf = makeLocalStarfield(starTex, tier, pos);
+      scene.add(sf);
+      return sf;
     });
-    const sphere = new THREE.Mesh(sphereGeo, sphereMat);
-    scene.add(sphere);
 
-    // ── HALOS ───────────────────────────────────────────────────────────────
+    // Helpers texture (halos doux)
     const makeHaloTexture = (color1, color2) => {
       const cv = document.createElement('canvas');
       cv.width = cv.height = 256;
@@ -240,146 +304,186 @@ export default function PersistentScene({ activeSectionRef }) {
     const haloTexGold  = makeHaloTexture('rgba(255,217,122,0.7)', 'rgba(212,193,154,0.4)');
     const haloTexWhite = makeHaloTexture('rgba(255,255,255,1)',   'rgba(170,210,255,0.6)');
 
-    const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+    // ═════════════════════════════════════════════════════════════════════════
+    // ── ASTRE 0 : HERO ───────────────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════════
+    const heroGroup = new THREE.Group();
+    heroGroup.position.copy(ASTRE_POSITIONS[0]);
+    scene.add(heroGroup);
+
+    const heroSphereSegs = tier === 'low' ? 32 : tier === 'medium' ? 64 : 96;
+    const heroSphere = new THREE.Mesh(
+      new THREE.SphereGeometry(1.8, heroSphereSegs, heroSphereSegs),
+      new THREE.MeshStandardMaterial({
+        color: 0x050309, metalness: 1.0, roughness: 0.08,
+        envMap, envMapIntensity: 2.5,
+      })
+    );
+    heroGroup.add(heroSphere);
+
+    const heroHalo = new THREE.Sprite(new THREE.SpriteMaterial({
       map: haloTexGold, transparent: true, depthWrite: false,
       blending: THREE.AdditiveBlending, opacity: 0.5,
     }));
-    halo.scale.set(7, 7, 1);
-    halo.position.set(0, 0, -2);
-    scene.add(halo);
+    heroHalo.scale.set(7, 7, 1);
+    heroHalo.position.set(0, 0, -2);
+    heroGroup.add(heroHalo);
 
-    const dwarfGlow = new THREE.Sprite(new THREE.SpriteMaterial({
-      map: haloTexWhite, transparent: true, depthWrite: false,
-      blending: THREE.AdditiveBlending, opacity: 0,
-    }));
-    dwarfGlow.scale.set(4, 4, 1);
-    dwarfGlow.position.set(0, 0, -0.5);
-    scene.add(dwarfGlow);
-
-    // ── Arcs magnetiques naine blanche ───────────────────────────────────────
-    const dwarfArcsGroup = new THREE.Group();
-    dwarfArcsGroup.visible = false;
-    scene.add(dwarfArcsGroup);
-    const NB_ARCS = tier === 'low' ? 12 : 20;
-    const dwarfArcs = [];
-    for (let i = 0; i < NB_ARCS; i++) {
-      const radius = 1.4 + Math.random() * 1.8;
-      const tube   = 0.006 + Math.random() * 0.008;
-      const arc = new THREE.Mesh(
-        new THREE.TorusGeometry(radius, tube, 4, 96),
-        new THREE.MeshBasicMaterial({
-          color: 0xb8dcff, transparent: true, opacity: 0,
-          blending: THREE.AdditiveBlending, depthWrite: false,
-        })
-      );
-      arc.rotation.x = Math.random() * Math.PI;
-      arc.rotation.y = Math.random() * Math.PI;
-      arc.rotation.z = Math.random() * Math.PI;
-      arc.scale.set(1, 0.4 + Math.random() * 0.5, 1);
-      dwarfArcsGroup.add(arc);
-      dwarfArcs.push({
-        mesh: arc,
-        baseRotX: arc.rotation.x, baseRotY: arc.rotation.y, baseRotZ: arc.rotation.z,
-        speedX: (Math.random() - 0.5) * 0.0015,
-        speedY: (Math.random() - 0.5) * 0.0015,
-        speedZ: (Math.random() - 0.5) * 0.001,
-        flickerSpeed: 1.5 + Math.random() * 2.5,
-        flickerOffset: Math.random() * Math.PI * 2,
-        baseOpacity: 0.4 + Math.random() * 0.5,
-      });
-    }
-
-    // ── ABOUT : SYSTEME STELLAIRE BINAIRE ───────────────────────────────────
-    const aboutGroup = new THREE.Group();
-    aboutGroup.visible = false;
-    scene.add(aboutGroup);
-
-    const aboutStarA = new THREE.Mesh(
-      new THREE.SphereGeometry(0.8, 64, 64),
-      new THREE.MeshStandardMaterial({
-        color: 0xd4c19a, metalness: 0.85, roughness: 0.15,
-        envMap, envMapIntensity: 2.0,
-        emissive: 0xffd97a, emissiveIntensity: 0.25,
-      })
-    );
-    aboutGroup.add(aboutStarA);
-
-    const aboutStarB = new THREE.Mesh(
-      new THREE.SphereGeometry(0.55, 64, 64),
-      new THREE.MeshStandardMaterial({
-        color: 0x8a6f3f, metalness: 0.9, roughness: 0.2,
-        envMap, envMapIntensity: 1.8,
-        emissive: 0x6a4f1f, emissiveIntensity: 0.4,
-      })
-    );
-    aboutGroup.add(aboutStarB);
-
-    const aboutHaloTex = makeHaloTexture('rgba(255,217,122,0.4)', 'rgba(212,193,154,0.15)');
-    const aboutHalo = new THREE.Sprite(new THREE.SpriteMaterial({
-      map: aboutHaloTex, transparent: true, depthWrite: false,
-      blending: THREE.AdditiveBlending, opacity: 0,
-    }));
-    aboutHalo.scale.set(8, 8, 1);
-    aboutHalo.position.set(0, 0, -1);
-    aboutGroup.add(aboutHalo);
-
-    const aboutOrbit = new THREE.Mesh(
-      new THREE.TorusGeometry(2.0, 0.006, 6, 180),
-      new THREE.MeshBasicMaterial({
-        color: 0xd4c19a, transparent: true, opacity: 0,
-      })
-    );
-    aboutOrbit.rotation.x = Math.PI / 2.3;
-    aboutOrbit.scale.set(1, 0.45, 1);
-    aboutGroup.add(aboutOrbit);
-
-    const DUST_COUNT = tier === 'low' ? 80 : tier === 'medium' ? 150 : 240;
-    const dustPos = new Float32Array(DUST_COUNT * 3);
-    const dustData = [];
-    for (let i = 0; i < DUST_COUNT; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const r = 2.5 + Math.random() * 2.5;
-      const yspread = (Math.random() - 0.5) * 0.4;
-      dustPos[i*3]   = Math.cos(angle) * r;
-      dustPos[i*3+1] = yspread;
-      dustPos[i*3+2] = Math.sin(angle) * r;
-      dustData.push({ baseAngle: angle, radius: r, yBase: yspread, speed: 0.08 + Math.random() * 0.12 });
-    }
-    const dustGeo = new THREE.BufferGeometry();
-    dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
-    const dustMat = new THREE.PointsMaterial({
-      color: 0xffd97a, size: 0.07, map: starTex,
-      transparent: true, depthWrite: false,
-      blending: THREE.AdditiveBlending, opacity: 0,
-    });
-    const dust = new THREE.Points(dustGeo, dustMat);
-    aboutGroup.add(dust);
-
-    // ── Anneaux orbitaux (hero) ──────────────────────────────────────────────
-    const rings = [];
-    [2.6, 3.2, 4.0].forEach((r, i) => {
+    const heroRings = [];
+    [2.6, 3.2].forEach((r, i) => {
       const ring = new THREE.Mesh(
         new THREE.TorusGeometry(r, 0.008, 6, 140),
         new THREE.MeshBasicMaterial({
-          color: COLORS.goldPale, transparent: true, opacity: 0,
+          color: COLORS.goldPale, transparent: true,
+          opacity: i === 0 ? 0.4 : 0.2,
         })
       );
       ring.rotation.x = Math.PI / 2.3 + i * 0.2;
       ring.rotation.z = i * 0.6;
-      scene.add(ring);
-      rings.push(ring);
+      heroGroup.add(ring);
+      heroRings.push(ring);
     });
 
-    // ── PROJECTS GROUP ───────────────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════════
+    // ── ASTRE 1 : ABOUT ──────────────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════════
+    const aboutGroup = new THREE.Group();
+    aboutGroup.position.copy(ASTRE_POSITIONS[1]);
+    scene.add(aboutGroup);
+
+    const aboutPlanet = new THREE.Mesh(
+      new THREE.SphereGeometry(1.98, heroSphereSegs, heroSphereSegs),
+      new THREE.MeshStandardMaterial({
+        color: 0x8a6f3f, metalness: 0.7, roughness: 0.25,
+        envMap, envMapIntensity: 1.5,
+      })
+    );
+    aboutGroup.add(aboutPlanet);
+
+    const aboutHalo = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: haloTexGold, transparent: true, depthWrite: false,
+      blending: THREE.AdditiveBlending, opacity: 0.3,
+    }));
+    aboutHalo.scale.set(8, 8, 1);
+    aboutHalo.position.set(0, 0, -2);
+    aboutGroup.add(aboutHalo);
+
+    const aboutRings = [];
+    [2.6, 3.2, 4.0].forEach((r, i) => {
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(r, 0.008, 6, 140),
+        new THREE.MeshBasicMaterial({
+          color: COLORS.goldPale, transparent: true,
+          opacity: [0.8, 0.6, 0.4][i],
+        })
+      );
+      ring.rotation.x = Math.PI / 2.3 + i * 0.2;
+      ring.rotation.z = i * 0.6;
+      aboutGroup.add(ring);
+      aboutRings.push(ring);
+    });
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // ── ASTRE 2 : SKILLS ─────────────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════════
+    const skillsGroup = new THREE.Group();
+    skillsGroup.position.copy(ASTRE_POSITIONS[2]);
+    scene.add(skillsGroup);
+
+    const skillsCore = new THREE.Mesh(
+      new THREE.SphereGeometry(0.45, heroSphereSegs, heroSphereSegs),
+      new THREE.MeshStandardMaterial({
+        color: 0x1a1410, metalness: 1.0, roughness: 0.15,
+        envMap, envMapIntensity: 1.8,
+      })
+    );
+    skillsGroup.add(skillsCore);
+
+    const skillsHalo = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: haloTexGold, transparent: true, depthWrite: false,
+      blending: THREE.AdditiveBlending, opacity: 0.15,
+    }));
+    skillsHalo.scale.set(2, 2, 1);
+    skillsHalo.position.set(0, 0, -1);
+    skillsGroup.add(skillsHalo);
+
+    const constStars = [];
+    const constLines = [];
+    CONSTELLATIONS.forEach((cst) => {
+      const localStars = [];
+      cst.stars.forEach((star) => {
+        const size = magToSize(star.mag);
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: brightStarTex, color: 0xfff8e8,
+          transparent: true, opacity: magToOpacity(star.mag),
+          depthWrite: false, blending: THREE.AdditiveBlending,
+        }));
+        sprite.scale.set(size * 8, size * 8, 1);
+        sprite.position.set(star.x, star.y, star.z);
+        skillsGroup.add(sprite);
+        const starObj = {
+          mesh: sprite, basePos: { x: star.x, y: star.y, z: star.z },
+          twinkleSpeed: 1.5 + Math.random() * 2,
+          twinkleOffset: Math.random() * Math.PI * 2,
+          driftSpeed: 0.3 + Math.random() * 0.4,
+          driftAmplitude: 0.06 + Math.random() * 0.04,
+          driftPhase: Math.random() * Math.PI * 2,
+          baseOpacity: magToOpacity(star.mag),
+          baseSize: size * 8,
+          name: star.name,
+        };
+        constStars.push(starObj);
+        localStars.push(starObj);
+      });
+      cst.connections.forEach(([i, j], lineIdx) => {
+        const a = localStars[i].basePos, b = localStars[j].basePos;
+        const geo = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(a.x, a.y, a.z),
+          new THREE.Vector3(b.x, b.y, b.z),
+        ]);
+        const line = new THREE.Line(geo, new THREE.LineBasicMaterial({
+          color: 0xd4c19a, transparent: true, opacity: 0,
+        }));
+        skillsGroup.add(line);
+        constLines.push({ mesh: line, revealDelay: lineIdx * 0.12 });
+      });
+    });
+
+    const decoStars = [];
+    for (let i = 0; i < 50; i++) {
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: starTex, color: 0xfff8e8,
+        transparent: true, opacity: 0,
+        depthWrite: false, blending: THREE.AdditiveBlending,
+      }));
+      const s = 0.06 + Math.random() * 0.08;
+      sprite.scale.set(s, s, 1);
+      sprite.position.set(
+        (Math.random() - 0.5) * 9,
+        (Math.random() - 0.5) * 5,
+        -1.5 + Math.random() * 1.5
+      );
+      skillsGroup.add(sprite);
+      decoStars.push({
+        mesh: sprite,
+        twinkleSpeed: 0.8 + Math.random() * 2,
+        twinkleOffset: Math.random() * Math.PI * 2,
+        baseOpacity: 0.3 + Math.random() * 0.4,
+      });
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // ── ASTRE 3 : PROJECTS ───────────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════════
     const projectsGroup = new THREE.Group();
-    projectsGroup.visible = false;
+    projectsGroup.position.copy(ASTRE_POSITIONS[3]);
     projectsGroup.scale.setScalar(0.65);
     scene.add(projectsGroup);
 
     const projKnot = new THREE.Mesh(
       new THREE.TorusKnotGeometry(1.4, 0.42, tier === 'low' ? 150 : 300, tier === 'low' ? 20 : 40, 2, 3),
       new THREE.MeshStandardMaterial({
-        color: COLORS.blackMetal, metalness: 1.0, roughness: 0.0,
+        color: 0x050309, metalness: 1.0, roughness: 0.0,
         envMap, envMapIntensity: 2.2,
       })
     );
@@ -397,7 +501,7 @@ export default function PersistentScene({ activeSectionRef }) {
     const projDodec = new THREE.Mesh(
       new THREE.DodecahedronGeometry(0.5, 0),
       new THREE.MeshStandardMaterial({
-        color: COLORS.blackMetal, metalness: 1.0, roughness: 0.1,
+        color: 0x050309, metalness: 1.0, roughness: 0.1,
         envMap, envMapIntensity: 1.6,
       })
     );
@@ -408,8 +512,7 @@ export default function PersistentScene({ activeSectionRef }) {
       const ring = new THREE.Mesh(
         new THREE.TorusGeometry(r, 0.012, 8, 160),
         new THREE.MeshBasicMaterial({
-          color: projRingColors[i],
-          transparent: true,
+          color: projRingColors[i], transparent: true,
           opacity: i === 2 ? 0.2 : 0.5,
         })
       );
@@ -419,146 +522,74 @@ export default function PersistentScene({ activeSectionRef }) {
       return ring;
     });
 
-    // ── CONSTELLATIONS (skills) — animation riche ────────────────────────────
-    const constellationGroup = new THREE.Group();
-    constellationGroup.visible = false;
-    scene.add(constellationGroup);
+    // ═════════════════════════════════════════════════════════════════════════
+    // ── ASTRE 4 : CONTACT ────────────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════════
+    const contactGroup = new THREE.Group();
+    contactGroup.position.copy(ASTRE_POSITIONS[4]);
+    const dwarfOffset = new THREE.Vector3(3, 0, 0);
+    scene.add(contactGroup);
 
-    const constStars = [];
-    const constLines = [];
+    const dwarfStar = new THREE.Mesh(
+      new THREE.SphereGeometry(1.8, heroSphereSegs, heroSphereSegs),
+      new THREE.MeshStandardMaterial({
+        color: 0xffffff, metalness: 0, roughness: 0,
+        emissive: 0xeaf4ff, emissiveIntensity: 3.5,
+      })
+    );
+    dwarfStar.scale.setScalar(0.55);
+    dwarfStar.position.copy(dwarfOffset);
+    contactGroup.add(dwarfStar);
 
-    CONSTELLATIONS.forEach((cst) => {
-      const localStars = [];
-      cst.stars.forEach((star) => {
-        const size = magToSize(star.mag);
-        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
-          map: brightStarTex,
-          color: 0xfff8e8,
-          transparent: true,
-          opacity: 0,
-          depthWrite: false,
-          blending: THREE.AdditiveBlending,
-        }));
-        sprite.scale.set(size * 8, size * 8, 1);
-        sprite.position.set(star.x, star.y, star.z);
-        constellationGroup.add(sprite);
-        const starObj = {
-          mesh: sprite,
-          basePos: { x: star.x, y: star.y, z: star.z },
-          twinkleSpeed: 1.5 + Math.random() * 2,
-          twinkleOffset: Math.random() * Math.PI * 2,
-          driftSpeed: 0.3 + Math.random() * 0.4,
-          driftAmplitude: 0.06 + Math.random() * 0.04,
-          driftPhase: Math.random() * Math.PI * 2,
-          baseOpacity: magToOpacity(star.mag),
-          baseSize: size * 8,
-          name: star.name,
-          mag: star.mag,
-        };
-        constStars.push(starObj);
-        localStars.push(starObj);
-      });
+    const dwarfHalo = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: haloTexWhite, transparent: true, depthWrite: false,
+      blending: THREE.AdditiveBlending, opacity: 1.0,
+    }));
+    dwarfHalo.scale.set(9, 9, 1);
+    dwarfHalo.position.set(dwarfOffset.x, dwarfOffset.y, dwarfOffset.z - 0.5);
+    contactGroup.add(dwarfHalo);
 
-      cst.connections.forEach(([i, j], lineIdx) => {
-        const a = localStars[i].basePos;
-        const b = localStars[j].basePos;
-        const geo = new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(a.x, a.y, a.z),
-          new THREE.Vector3(b.x, b.y, b.z),
-        ]);
-        const line = new THREE.Line(geo, new THREE.LineBasicMaterial({
-          color: 0xd4c19a, transparent: true, opacity: 0,
-        }));
-        constellationGroup.add(line);
-        constLines.push({ mesh: line, revealDelay: lineIdx * 0.12 });
-      });
-    });
+    const dwarfGlow = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: haloTexWhite, transparent: true, depthWrite: false,
+      blending: THREE.AdditiveBlending, opacity: 0.9,
+    }));
+    dwarfGlow.scale.set(4, 4, 1);
+    dwarfGlow.position.copy(dwarfOffset);
+    contactGroup.add(dwarfGlow);
 
-    const DECO_STARS = 50;
-    const decoStars = [];
-    for (let i = 0; i < DECO_STARS; i++) {
-      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
-        map: starTex, color: 0xfff8e8,
-        transparent: true, opacity: 0,
-        depthWrite: false, blending: THREE.AdditiveBlending,
-      }));
-      const s = 0.06 + Math.random() * 0.08;
-      sprite.scale.set(s, s, 1);
-      const x = (Math.random() - 0.5) * 9;
-      const y = (Math.random() - 0.5) * 5;
-      const z = -1.5 + Math.random() * 1.5;
-      sprite.position.set(x, y, z);
-      constellationGroup.add(sprite);
-      decoStars.push({
-        mesh: sprite,
-        basePos: { x, y, z },
-        twinkleSpeed: 0.8 + Math.random() * 2,
-        twinkleOffset: Math.random() * Math.PI * 2,
-        baseOpacity: 0.3 + Math.random() * 0.4,
+    const NB_ARCS = tier === 'low' ? 12 : 20;
+    const dwarfArcs = [];
+    for (let i = 0; i < NB_ARCS; i++) {
+      const radius = 1.4 + Math.random() * 1.8;
+      const tube   = 0.006 + Math.random() * 0.008;
+      const arc = new THREE.Mesh(
+        new THREE.TorusGeometry(radius, tube, 4, 96),
+        new THREE.MeshBasicMaterial({
+          color: 0xb8dcff, transparent: true, opacity: 0.5,
+          blending: THREE.AdditiveBlending, depthWrite: false,
+        })
+      );
+      arc.rotation.x = Math.random() * Math.PI;
+      arc.rotation.y = Math.random() * Math.PI;
+      arc.rotation.z = Math.random() * Math.PI;
+      arc.scale.set(1, 0.4 + Math.random() * 0.5, 1);
+      arc.position.copy(dwarfOffset);
+      contactGroup.add(arc);
+      dwarfArcs.push({
+        mesh: arc,
+        baseRotX: arc.rotation.x, baseRotY: arc.rotation.y, baseRotZ: arc.rotation.z,
+        speedX: (Math.random() - 0.5) * 0.0015,
+        speedY: (Math.random() - 0.5) * 0.0015,
+        speedZ: (Math.random() - 0.5) * 0.001,
+        flickerSpeed: 1.5 + Math.random() * 2.5,
+        flickerOffset: Math.random() * Math.PI * 2,
+        baseOpacity: 0.4 + Math.random() * 0.5,
       });
     }
 
-    // ── Sparks ───────────────────────────────────────────────────────────────
-    const SPARK_COUNT = tier === 'low' ? 40 : 80;
-    const sparkPos = new Float32Array(SPARK_COUNT * 3);
-    const sparkData = [];
-    for (let i = 0; i < SPARK_COUNT; i++) {
-      sparkData.push({ life: Math.random(), maxLife: 2 + Math.random() * 2, vx: 0, vy: 0, vz: 0 });
-    }
-    const sparkGeo = new THREE.BufferGeometry();
-    sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPos, 3));
-    const sparkMat = new THREE.PointsMaterial({
-      color: COLORS.goldGlow, size: 0.08, map: starTex,
-      transparent: true, depthWrite: false,
-      blending: THREE.AdditiveBlending, opacity: 0.7,
-    });
-    const sparks = new THREE.Points(sparkGeo, sparkMat);
-    scene.add(sparks);
+    scene.fog = new THREE.FogExp2(COLORS.bg, 0.0035);
 
-    scene.fog = new THREE.FogExp2(COLORS.bg, 0.018);
-
-    // ── MORPH TARGETS ────────────────────────────────────────────────────────
-    const morphTargets = {
-      0: { centerX: 0, sphereVisible: 1, projectsVisible: 0, aboutVisible: 0, constVisible: 0, dwarfGlowOpacity: 0,
-           sphereColor: 0x050309, sphereScale: 1, sphereMetal: 1, sphereRough: 0.08,
-           sphereEnvIntensity: 2.5, haloOpacity: 0.5, haloColor: 0xffd97a, haloScale: 7,
-           ringOpacities: [0.4, 0.2, 0],
-           sparkOpacity: 0.7, sparkColor: 0xffd97a },
-
-      // ABOUT : Saturne (sphere doree + anneaux marques) — comme avant
-      1: { centerX: 0, sphereVisible: 1, projectsVisible: 0, aboutVisible: 0, constVisible: 0, dwarfGlowOpacity: 0,
-           sphereColor: 0x8a6f3f, sphereScale: 1.1, sphereMetal: 0.7, sphereRough: 0.25,
-           sphereEnvIntensity: 1.5, haloOpacity: 0.3, haloColor: 0xd4c19a, haloScale: 8,
-           ringOpacities: [0.8, 0.6, 0.4],
-           sparkOpacity: 0.4, sparkColor: 0xd4c19a },
-
-      // SKILLS : mini astre noir au centre + constellations
-      2: { centerX: 0, sphereVisible: 1, projectsVisible: 0, aboutVisible: 0, constVisible: 1, dwarfGlowOpacity: 0,
-           sphereColor: 0x1a1410, sphereScale: 0.25, sphereMetal: 1, sphereRough: 0.15,
-           sphereEnvIntensity: 1.8, haloOpacity: 0.15, haloColor: 0xd4c19a, haloScale: 2,
-           ringOpacities: [0, 0, 0],
-           sparkOpacity: 0.2, sparkColor: 0xffd97a },
-
-      3: { centerX: 0, sphereVisible: 0, projectsVisible: 1, aboutVisible: 0, constVisible: 0, dwarfGlowOpacity: 0,
-           sphereColor: 0x050309, sphereScale: 0.01, sphereMetal: 1, sphereRough: 0.08,
-           sphereEnvIntensity: 2.5, haloOpacity: 0, haloColor: 0xffd97a, haloScale: 5,
-           ringOpacities: [0, 0, 0],
-           sparkOpacity: 0.5, sparkColor: 0xd4c19a },
-
-      4: { centerX: 3, sphereVisible: 1, projectsVisible: 0, aboutVisible: 0, constVisible: 0, dwarfGlowOpacity: 1,
-           sphereColor: 0xffffff, sphereScale: 0.55, sphereMetal: 0, sphereRough: 0.0,
-           sphereEnvIntensity: 0, haloOpacity: 1.0, haloColor: 0x88bfff, haloScale: 9,
-           ringOpacities: [0, 0, 0],
-           sparkOpacity: 1.0, sparkColor: 0xc8e0ff },
-    };
-
-    const lerp = (a, b, t) => a + (b - a) * t;
-    const lerpColor = (cA, cB, t) => {
-      const a = new THREE.Color(cA);
-      const b = new THREE.Color(cB);
-      return a.lerp(b, t).getHex();
-    };
-
+    // ── Interactions ──────────────────────────────────────────────────────────
     const onMouse = (e) => {
       stateRef.current.mx = (e.clientX / window.innerWidth  - 0.5) * 2;
       stateRef.current.my = -(e.clientY / window.innerHeight - 0.5) * 2;
@@ -576,9 +607,23 @@ export default function PersistentScene({ activeSectionRef }) {
     const onVisibility = () => { isVisible = !document.hidden; };
     document.addEventListener('visibilitychange', onVisibility);
 
+    const TRAVEL_DURATION = 1.2;
+    const TRAVEL_INCREMENT = 1 / (60 * TRAVEL_DURATION);
+
     const clock = new THREE.Clock();
     let animId;
     let constRevealStart = 0;
+
+    const vTmp = new THREE.Vector3();
+    const vLook = new THREE.Vector3();
+
+    function quadBezier(p0, p1, p2, t, out) {
+      const u = 1 - t;
+      out.x = u*u*p0.x + 2*u*t*p1.x + t*t*p2.x;
+      out.y = u*u*p0.y + 2*u*t*p1.y + t*t*p2.y;
+      out.z = u*u*p0.z + 2*u*t*p1.z + t*t*p2.z;
+      return out;
+    }
 
     const animate = () => {
       animId = requestAnimationFrame(animate);
@@ -588,240 +633,143 @@ export default function PersistentScene({ activeSectionRef }) {
 
       const targetSection = activeSectionRef.current ?? 0;
       if (targetSection !== state.targetMorph) {
+        state.cameraTravelFrom.copy(ASTRE_POSITIONS[state.currentMorph]);
+        state.cameraTravelTo.copy(ASTRE_POSITIONS[targetSection]);
+        const ctrl = curvePoints[`${state.currentMorph}-${targetSection}`];
+        if (ctrl) state.cameraTravelCtrl.copy(ctrl);
         if (targetSection === 2) constRevealStart = t;
         state.targetMorph = targetSection;
         state.morphProgress = 0;
       }
       if (state.morphProgress < 1) {
-        state.morphProgress = Math.min(state.morphProgress + 0.012, 1);
+        state.morphProgress = Math.min(state.morphProgress + TRAVEL_INCREMENT, 1);
       }
 
-      const from = morphTargets[state.currentMorph];
-      const to   = morphTargets[state.targetMorph];
-      const p    = easeInOutCubic(state.morphProgress);
+      const p = easeInOutCubic(state.morphProgress);
 
-      // Sphere principale
-      sphereMat.color.setHex(lerpColor(from.sphereColor, to.sphereColor, p));
-      sphereMat.metalness        = lerp(from.sphereMetal,        to.sphereMetal,        p);
-      sphereMat.roughness        = lerp(from.sphereRough,        to.sphereRough,        p);
-      sphereMat.envMapIntensity  = lerp(from.sphereEnvIntensity, to.sphereEnvIntensity, p);
+      // ── VOYAGE camera (Bezier quadratique) ───────────────────────────────────
+      quadBezier(state.cameraTravelFrom, state.cameraTravelCtrl, state.cameraTravelTo, p, vTmp);
+      vTmp.z += 7;
+      vTmp.x += state.mx * 0.6;
+      vTmp.y += state.my * 0.4;
+      camera.position.lerp(vTmp, state.morphProgress < 1 ? 1 : 0.08);
 
-      const sphereVis = lerp(from.sphereVisible, to.sphereVisible, p);
-      sphereMat.transparent = sphereVis < 1;
-      sphereMat.opacity = sphereVis;
-      sphere.visible = sphereVis > 0.01;
+      const lookTarget = state.morphProgress < 1
+        ? state.cameraTravelTo
+        : ASTRE_POSITIONS[state.targetMorph];
+      vLook.copy(lookTarget);
+      camera.lookAt(vLook);
 
-      const centerX = lerp(from.centerX, to.centerX, p);
-      sphere.position.x         = centerX;
-      halo.position.x           = centerX;
-      dwarfGlow.position.x      = centerX;
-      dwarfArcsGroup.position.x = centerX;
+      // ── LUMIERES ─────────────────────────────────────────────────────────────
+      const lookAstre = state.morphProgress < 1
+        ? state.cameraTravelTo
+        : ASTRE_POSITIONS[state.targetMorph];
+      keyLight.position.set(
+        lookAstre.x + 2 + Math.cos(t * 0.4) * 3,
+        lookAstre.y + 5 + Math.sin(t * 0.4) * 1,
+        lookAstre.z + 4
+      );
+      fillLight.position.set(
+        lookAstre.x + 4 + Math.cos(t * 0.5) * 1.5,
+        lookAstre.y - 1,
+        lookAstre.z + 3
+      );
+      rimLight.position.set(lookAstre.x, lookAstre.y, lookAstre.z - 3);
 
-      if (state.targetMorph === 4 || state.currentMorph === 4) {
-        sphereMat.emissive = new THREE.Color(0xeaf4ff);
-        const dwarfP = state.targetMorph === 4 ? p : (1 - p);
-        sphereMat.emissiveIntensity = 3.5 * dwarfP;
-      } else {
-        sphereMat.emissive = new THREE.Color(0x000000);
-        sphereMat.emissiveIntensity = 0;
-      }
+      // ═══════════════════════════════════════════════════════════════════════
+      // ── ANIMATIONS DES ASTRES ───────────────────────────────────────────────
+      // ═══════════════════════════════════════════════════════════════════════
 
-      // Projects fade
-      const projectsVis = lerp(from.projectsVisible, to.projectsVisible, p);
-      projectsGroup.visible = projectsVis > 0.01;
-      projKnot.material.transparent = true;     projKnot.material.opacity   = projectsVis;
-      projSphere.material.transparent = true;   projSphere.material.opacity = projectsVis;
-      projDodec.material.transparent = true;    projDodec.material.opacity  = projectsVis;
-      projRings.forEach((ring, i) => {
-        const baseOp = i === 2 ? 0.2 : 0.5;
-        ring.material.opacity = baseOp * projectsVis;
-      });
-
-      // About fade
-      const aboutVis = lerp(from.aboutVisible, to.aboutVisible, p);
-      aboutGroup.visible = aboutVis > 0.01;
-      aboutStarA.material.transparent = true;
-      aboutStarA.material.opacity = aboutVis;
-      aboutStarB.material.transparent = true;
-      aboutStarB.material.opacity = aboutVis;
-      aboutHalo.material.opacity = aboutVis * (0.7 + Math.sin(t * 0.7) * 0.2);
-      aboutOrbit.material.opacity = aboutVis * 0.35;
-      dustMat.opacity = aboutVis * 0.55;
-
-      // Naine blanche
-      const dwarfGlowVis = lerp(from.dwarfGlowOpacity, to.dwarfGlowOpacity, p);
-      const dwarfPulse = 0.7 + Math.sin(t * 4.0) * 0.25 + Math.sin(t * 7.3) * 0.1;
-      dwarfGlow.material.opacity = dwarfGlowVis * dwarfPulse;
-      dwarfGlow.scale.setScalar((3 + Math.sin(t * 4.0) * 0.4) * (dwarfGlowVis > 0.01 ? 1 : 0));
-
-      dwarfArcsGroup.visible = dwarfGlowVis > 0.01;
-      if (dwarfArcsGroup.visible) {
-        dwarfArcs.forEach((arc) => {
-          arc.mesh.rotation.x = arc.baseRotX + t * arc.speedX * 60;
-          arc.mesh.rotation.y = arc.baseRotY + t * arc.speedY * 60;
-          arc.mesh.rotation.z = arc.baseRotZ + t * arc.speedZ * 60;
-          const flicker = 0.6 + Math.sin(t * arc.flickerSpeed + arc.flickerOffset) * 0.4;
-          arc.mesh.material.opacity = arc.baseOpacity * dwarfGlowVis * flicker;
-        });
-      }
-
-      // Echelle sphere + respiration
-      const baseScale = lerp(from.sphereScale, to.sphereScale, p);
-      let breathSpeed = 1.2, breathAmount = 0.015;
-      if (state.targetMorph === 3) { breathSpeed = 0.3; breathAmount = 0.02; }
-      if (state.targetMorph === 4) { breathSpeed = 5.0; breathAmount = 0.08; }
-      const breathe = 1 + Math.sin(t * breathSpeed) * breathAmount;
-      sphere.scale.setScalar(baseScale * breathe);
-
-      // Halo principal
-      halo.material.opacity = lerp(from.haloOpacity, to.haloOpacity, p) * (0.85 + Math.sin(t * 0.8) * 0.15);
-      halo.material.color.setHex(lerpColor(from.haloColor, to.haloColor, p));
-      halo.scale.setScalar(lerp(from.haloScale, to.haloScale, p) + Math.sin(t * 0.6) * 0.3);
-      halo.material.map = (state.targetMorph === 4) ? haloTexWhite : haloTexGold;
-      halo.material.needsUpdate = true;
-
-      rings.forEach((ring, i) => {
-        ring.material.opacity = lerp(from.ringOpacities[i], to.ringOpacities[i], p);
+      // HERO
+      heroSphere.rotation.y = t * 0.18;
+      heroSphere.rotation.x = Math.sin(t * 0.3) * 0.15;
+      heroSphere.scale.setScalar(1 + Math.sin(t * 1.2) * 0.015);
+      heroHalo.material.opacity = 0.5 * (0.85 + Math.sin(t * 0.8) * 0.15);
+      heroHalo.scale.setScalar(7 + Math.sin(t * 0.6) * 0.3);
+      heroRings.forEach((ring, i) => {
         ring.rotation.z += 0.001 * (i % 2 === 0 ? 1 : -1);
         ring.rotation.y += 0.0006;
       });
 
-      // PROJECTS anim
-      if (projectsGroup.visible) {
-        projKnot.rotation.x  = t * 0.28;
-        projKnot.rotation.y  = t * 0.38;
-        projSphere.position.x = Math.cos(t * 0.6) * 3.2;
-        projSphere.position.y = Math.sin(t * 0.6) * 0.8;
-        projSphere.position.z = Math.sin(t * 0.6) * 3.2;
-        projSphere.rotation.y = t * 0.5;
-        projDodec.position.x = Math.cos(t * 0.4 + Math.PI) * 4;
-        projDodec.position.y = 1.5 + Math.sin(t * 0.7) * 0.5;
-        projDodec.position.z = Math.sin(t * 0.4 + Math.PI) * 4;
-        projDodec.rotation.x = t * 0.6;
-        projDodec.rotation.y = t * 0.8;
-        projRings.forEach((ring, i) => {
-          ring.rotation.z += 0.0018 * (i % 2 === 0 ? 1 : -1);
-          ring.rotation.y += 0.001;
-        });
-      }
+      // ABOUT
+      aboutPlanet.rotation.y = t * 0.15;
+      aboutPlanet.rotation.x = Math.sin(t * 0.3) * 0.1;
+      aboutPlanet.scale.setScalar(1.1 * (1 + Math.sin(t * 1.0) * 0.01));
+      aboutHalo.material.opacity = 0.3 * (0.85 + Math.sin(t * 0.7) * 0.15);
+      aboutHalo.scale.setScalar(8 + Math.sin(t * 0.5) * 0.3);
+      aboutRings.forEach((ring, i) => {
+        ring.rotation.z += 0.0012 * (i % 2 === 0 ? 1 : -1);
+        ring.rotation.y += 0.0008;
+      });
 
-      // ABOUT : systeme binaire en orbite
-      if (aboutGroup.visible) {
-        const orbitSpeed = 0.45;
-        const angleA = t * orbitSpeed;
-        const angleB = t * orbitSpeed + Math.PI;
-        aboutStarA.position.x = Math.cos(angleA) * 0.7;
-        aboutStarA.position.y = Math.sin(angleA) * 0.7 * 0.5;
-        aboutStarA.position.z = Math.sin(angleA) * 0.7 * 0.3;
-        aboutStarB.position.x = Math.cos(angleB) * 1.6;
-        aboutStarB.position.y = Math.sin(angleB) * 1.6 * 0.5;
-        aboutStarB.position.z = Math.sin(angleB) * 1.6 * 0.3;
-        aboutStarA.rotation.y = t * 0.3;
-        aboutStarB.rotation.y = t * 0.6;
-        aboutStarA.material.emissiveIntensity = 0.25 + Math.sin(t * 1.8) * 0.1;
-        aboutStarB.material.emissiveIntensity = 0.4  + Math.sin(t * 2.2 + 1) * 0.15;
-        aboutOrbit.rotation.z = t * 0.08;
-        const dustPositions = dustGeo.getAttribute('position').array;
-        for (let i = 0; i < DUST_COUNT; i++) {
-          const d = dustData[i];
-          const a = d.baseAngle + t * d.speed;
-          dustPositions[i*3]   = Math.cos(a) * d.radius;
-          dustPositions[i*3+1] = d.yBase + Math.sin(t * 0.3 + i * 0.1) * 0.05;
-          dustPositions[i*3+2] = Math.sin(a) * d.radius;
-        }
-        dustGeo.getAttribute('position').needsUpdate = true;
-      }
+      // SKILLS
+      skillsCore.rotation.y = t * 0.18;
+      skillsCore.scale.setScalar(1 + Math.sin(t * 1.2) * 0.02);
+      constStars.forEach((star) => {
+        const twinkle = 0.7 + Math.sin(t * star.twinkleSpeed + star.twinkleOffset) * 0.3;
+        star.mesh.material.opacity = star.baseOpacity * twinkle;
+        const sizePulse = 1 + Math.sin(t * star.twinkleSpeed * 0.7 + star.twinkleOffset) * 0.12;
+        star.mesh.scale.set(star.baseSize * sizePulse, star.baseSize * sizePulse, 1);
+        const drift = star.driftAmplitude;
+        star.mesh.position.x = star.basePos.x + Math.cos(t * star.driftSpeed + star.driftPhase) * drift;
+        star.mesh.position.y = star.basePos.y + Math.sin(t * star.driftSpeed + star.driftPhase) * drift * 0.7;
+        star.mesh.position.z = star.basePos.z + Math.sin(t * star.driftSpeed * 0.5) * drift * 0.4;
+        if (star.name === 'Betelgeuse')   star.mesh.material.color.setHex(0xffaa55);
+        else if (star.name === 'Rigel')   star.mesh.material.color.setHex(0xc8d8ff);
+        else                              star.mesh.material.color.setHex(0xfff8e8);
+      });
+      const timeSinceReveal = t - constRevealStart;
+      constLines.forEach((lineObj, idx) => {
+        const lineProgress = Math.max(0, Math.min(1, (timeSinceReveal - lineObj.revealDelay) / 0.6));
+        const linePulse = 0.7 + Math.sin(t * 1.2 + idx * 0.5) * 0.3;
+        lineObj.mesh.material.opacity = 0.35 * lineProgress * linePulse;
+      });
+      decoStars.forEach((star) => {
+        const tw = 0.5 + Math.sin(t * star.twinkleSpeed + star.twinkleOffset) * 0.5;
+        star.mesh.material.opacity = star.baseOpacity * tw;
+      });
+      skillsGroup.rotation.y = Math.sin(t * 0.05) * 0.06;
+      skillsGroup.rotation.x = Math.cos(t * 0.04) * 0.03;
 
-      // ── CONSTELLATIONS — ANIMATIONS COMPLETES ─────────────────────────────
-      const cOp = lerp(from.constVisible, to.constVisible, p);
-      constellationGroup.visible = cOp > 0.01;
-      if (constellationGroup.visible) {
-        // 1) Etoiles principales : scintillement + pulse + drift orbital
-        constStars.forEach((star) => {
-          const twinkle = 0.7 + Math.sin(t * star.twinkleSpeed + star.twinkleOffset) * 0.3;
-          star.mesh.material.opacity = star.baseOpacity * cOp * twinkle;
+      // PROJECTS
+      projKnot.rotation.x  = t * 0.28;
+      projKnot.rotation.y  = t * 0.38;
+      projSphere.position.x = Math.cos(t * 0.6) * 3.2;
+      projSphere.position.y = Math.sin(t * 0.6) * 0.8;
+      projSphere.position.z = Math.sin(t * 0.6) * 3.2;
+      projSphere.rotation.y = t * 0.5;
+      projDodec.position.x = Math.cos(t * 0.4 + Math.PI) * 4;
+      projDodec.position.y = 1.5 + Math.sin(t * 0.7) * 0.5;
+      projDodec.position.z = Math.sin(t * 0.4 + Math.PI) * 4;
+      projDodec.rotation.x = t * 0.6;
+      projDodec.rotation.y = t * 0.8;
+      projRings.forEach((ring, i) => {
+        ring.rotation.z += 0.0018 * (i % 2 === 0 ? 1 : -1);
+        ring.rotation.y += 0.001;
+      });
 
-          // Pulse de taille (les etoiles respirent)
-          const sizePulse = 1 + Math.sin(t * star.twinkleSpeed * 0.7 + star.twinkleOffset) * 0.12;
-          star.mesh.scale.set(star.baseSize * sizePulse, star.baseSize * sizePulse, 1);
+      // CONTACT
+      const dwarfPulse = 0.7 + Math.sin(t * 4.0) * 0.25 + Math.sin(t * 7.3) * 0.1;
+      dwarfHalo.material.opacity = dwarfPulse;
+      dwarfHalo.scale.setScalar(9 + Math.sin(t * 4.0) * 0.6);
+      dwarfGlow.material.opacity = 0.9 * dwarfPulse;
+      dwarfGlow.scale.setScalar(3 + Math.sin(t * 4.0) * 0.4);
+      dwarfStar.scale.setScalar(0.55 * (1 + Math.sin(t * 5.0) * 0.08));
+      dwarfArcs.forEach((arc) => {
+        arc.mesh.rotation.x = arc.baseRotX + t * arc.speedX * 60;
+        arc.mesh.rotation.y = arc.baseRotY + t * arc.speedY * 60;
+        arc.mesh.rotation.z = arc.baseRotZ + t * arc.speedZ * 60;
+        const flicker = 0.6 + Math.sin(t * arc.flickerSpeed + arc.flickerOffset) * 0.4;
+        arc.mesh.material.opacity = arc.baseOpacity * flicker;
+      });
 
-          // Micro-orbite individuelle (chaque etoile derive doucement)
-          const drift = star.driftAmplitude;
-          star.mesh.position.x = star.basePos.x + Math.cos(t * star.driftSpeed + star.driftPhase) * drift;
-          star.mesh.position.y = star.basePos.y + Math.sin(t * star.driftSpeed + star.driftPhase) * drift * 0.7;
-          star.mesh.position.z = star.basePos.z + Math.sin(t * star.driftSpeed * 0.5) * drift * 0.4;
-
-          // Couleurs spectrales speciales
-          if (star.name === 'Betelgeuse') {
-            star.mesh.material.color.setHex(0xffaa55);
-          } else if (star.name === 'Rigel') {
-            star.mesh.material.color.setHex(0xc8d8ff);
-          } else {
-            star.mesh.material.color.setHex(0xfff8e8);
-          }
-        });
-
-        // 2) Lignes : trace progressif (chacune apparait en sequence) + pulse
-        const timeSinceReveal = t - constRevealStart;
-        constLines.forEach((lineObj, idx) => {
-          const lineProgress = Math.max(0, Math.min(1, (timeSinceReveal - lineObj.revealDelay) / 0.6));
-          const linePulse = 0.7 + Math.sin(t * 1.2 + idx * 0.5) * 0.3;
-          lineObj.mesh.material.opacity = 0.35 * cOp * lineProgress * linePulse;
-        });
-
-        // 3) Etoiles deco : twinkle independant et intense
-        decoStars.forEach((star) => {
-          const tw = 0.5 + Math.sin(t * star.twinkleSpeed + star.twinkleOffset) * 0.5;
-          star.mesh.material.opacity = star.baseOpacity * cOp * tw;
-        });
-
-        // 4) Drift global de tout le ciel (nutation celeste lente)
-        constellationGroup.rotation.y = Math.sin(t * 0.05) * 0.06;
-        constellationGroup.rotation.x = Math.cos(t * 0.04) * 0.03;
-      }
-
-      sphere.rotation.y = t * 0.18;
-      sphere.rotation.x = Math.sin(t * 0.3) * 0.15;
-      starfield.rotation.y = t * 0.015;
-
-      // Sparks
-      sparkMat.color.setHex(lerpColor(from.sparkColor, to.sparkColor, p));
-      sparkMat.opacity = lerp(from.sparkOpacity, to.sparkOpacity, p);
-      const sparkPositions = sparkGeo.getAttribute('position').array;
-      const targetRadius = state.targetMorph === 3 ? 1.8 : baseScale * 1.8;
-      const sparkSpeed = state.targetMorph === 4 ? 0.012 : 0.005;
-      for (let i = 0; i < SPARK_COUNT; i++) {
-        const d = sparkData[i];
-        d.life += 0.01;
-        if (d.life > d.maxLife) {
-          const theta = Math.random() * Math.PI * 2;
-          const phi   = Math.acos(Math.random() * 2 - 1);
-          sparkPositions[i*3]   = centerX + targetRadius * Math.sin(phi) * Math.cos(theta);
-          sparkPositions[i*3+1] = targetRadius * Math.sin(phi) * Math.sin(theta);
-          sparkPositions[i*3+2] = targetRadius * Math.cos(phi);
-          const dx = sparkPositions[i*3] - centerX;
-          const dy = sparkPositions[i*3+1];
-          const dz = sparkPositions[i*3+2];
-          d.vx = (dx / targetRadius) * sparkSpeed;
-          d.vy = (dy / targetRadius) * sparkSpeed + 0.002;
-          d.vz = (dz / targetRadius) * sparkSpeed;
-          d.life = 0;
-          d.maxLife = 2 + Math.random() * 2;
-        } else {
-          sparkPositions[i*3]   += d.vx;
-          sparkPositions[i*3+1] += d.vy;
-          sparkPositions[i*3+2] += d.vz;
-        }
-      }
-      sparkGeo.getAttribute('position').needsUpdate = true;
-
-      keyLight.position.x = 2 + Math.cos(t * 0.4) * 3;
-      keyLight.position.y = 5 + Math.sin(t * 0.4) * 1;
-      fillLight.position.x = 4 + Math.cos(t * 0.5) * 1.5;
-
-      camera.position.x += (state.mx * 0.6 - camera.position.x) * 0.02;
-      camera.position.y += (state.my * 0.4 - camera.position.y) * 0.02;
-      camera.lookAt(0, 0, 0);
+      // ── ROTATION DES CHAMPS D'ETOILES ────────────────────────────────────────
+      // Fond galactique : rotation tres lente (comme code 2 original)
+      starfield.rotation.y = t * 0.005;
+      // Etoiles locales : rotation douce (comme code 1 — 0.015 rad/s)
+      localStarfields.forEach((sf) => {
+        sf.rotation.y = t * 0.015;
+      });
 
       if (state.morphProgress >= 1) {
         state.currentMorph = state.targetMorph;
@@ -842,22 +790,23 @@ export default function PersistentScene({ activeSectionRef }) {
       envMap.dispose();
       haloTexGold.dispose();
       haloTexWhite.dispose();
-      aboutHaloTex.dispose();
-      sphereGeo.dispose();
-      sphereMat.dispose();
+      // Champs d'etoiles
+      localStarfields.forEach(sf => { sf.geometry.dispose(); sf.material.dispose(); });
+      // Astres
+      heroSphere.geometry.dispose(); heroSphere.material.dispose();
+      heroRings.forEach(r => { r.geometry.dispose(); r.material.dispose(); });
+      aboutPlanet.geometry.dispose(); aboutPlanet.material.dispose();
+      aboutRings.forEach(r => { r.geometry.dispose(); r.material.dispose(); });
+      skillsCore.geometry.dispose(); skillsCore.material.dispose();
+      constStars.forEach(s => { s.mesh.material.dispose(); });
+      constLines.forEach(l => { l.mesh.geometry.dispose(); l.mesh.material.dispose(); });
+      decoStars.forEach(s => { s.mesh.material.dispose(); });
       projKnot.geometry.dispose();   projKnot.material.dispose();
       projSphere.geometry.dispose(); projSphere.material.dispose();
       projDodec.geometry.dispose();  projDodec.material.dispose();
-      aboutStarA.geometry.dispose(); aboutStarA.material.dispose();
-      aboutStarB.geometry.dispose(); aboutStarB.material.dispose();
-      aboutOrbit.geometry.dispose(); aboutOrbit.material.dispose();
-      dustGeo.dispose();             dustMat.dispose();
-      rings.forEach(r => { r.geometry.dispose(); r.material.dispose(); });
       projRings.forEach(r => { r.geometry.dispose(); r.material.dispose(); });
-      constStars.forEach(s => { s.mesh.material.dispose(); });
-      constLines.forEach(l => { l.mesh.geometry.dispose(); l.mesh.material.dispose(); });
+      dwarfStar.geometry.dispose(); dwarfStar.material.dispose();
       dwarfArcs.forEach(a => { a.mesh.geometry.dispose(); a.mesh.material.dispose(); });
-      decoStars.forEach(s => { s.mesh.material.dispose(); });
     };
   }, [activeSectionRef]);
 
