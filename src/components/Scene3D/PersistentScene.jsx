@@ -768,7 +768,7 @@ export default function PersistentScene({ activeSectionRef }) {
       starfield.rotation.y = t * 0.005;
       // Etoiles locales : rotation douce (comme code 1 — 0.015 rad/s)
       localStarfields.forEach((sf) => {
-        sf.rotation.y = t * 0.015;
+        sf.rotation.y = t * 0.005;
       });
 
       if (state.morphProgress >= 1) {
