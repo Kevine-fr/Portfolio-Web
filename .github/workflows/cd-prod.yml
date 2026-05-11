@@ -44,6 +44,18 @@ jobs:
           ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} << EOF
 
           cd /home/kevine/deploy/Portfolio-Web
+          
+          echo "→ Pull du code..."
+          git fetch origin
+          git reset --hard origin/main
+
+          echo "→ Génération du .env..."
+          cat > .env << 'ENVEOF'
+          
+          ENVEOF
+          chmod 600 .env
+
+          echo "→ Build et démarrage..."
 
           export IMAGE_TAG=${IMAGE_TAG}
 
