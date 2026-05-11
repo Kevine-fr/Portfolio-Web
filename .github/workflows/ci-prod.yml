@@ -1,0 +1,70 @@
+name: Build & Push Production Image
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    outputs:
+      image_tag: ${{ steps.version.outputs.image_tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch tags
+        run: git fetch --tags
+
+      - name: Generate version
+        id: version
+        run: |
+          LAST_TAG=$(git tag --list "v*" --sort=-v:refname | head -n 1)
+
+          if [ -z "$LAST_TAG" ]; then
+            VERSION="v1.0.0"
+          else
+            VERSION=${LAST_TAG#v}
+
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+            PATCH=$((PATCH + 1))
+
+            VERSION="v$MAJOR.$MINOR.$PATCH"
+          fi
+
+          echo "IMAGE_TAG=prod-$VERSION" >> $GITHUB_ENV
+          echo "image_tag=prod-$VERSION" >> $GITHUB_OUTPUT
+
+          git tag $VERSION
+          git push origin $VERSION
+
+      - name: Login DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & Push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.prod
+          push: true
+
+          tags: |
+            zstin4/web-portfolio:${{ steps.version.outputs.image_tag }}
+            zstin4/web-portfolio:latest
+
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+            VITE_SITE_URL=${{ secrets.VITE_SITE_URL }}

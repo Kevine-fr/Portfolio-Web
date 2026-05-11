@@ -1,8 +1,6 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile.prod
+    image: zstin4/web-portfolio:${IMAGE_TAG}
     container_name: web_portfolio
     restart: always
     expose:
@@ -14,29 +12,3 @@ networks:
   web:
     external: true
     name: web
-
-
-# server {
-#     listen 80;
-#     server_name wk-archi-o22a-15m-g1.fr www.wk-archi-o22a-15m-g1.fr;
-
-#     location /.well-known/acme-challenge/ {
-#         root /var/www/certbot;
-#     }
-
-#     location / {
-#         return 301 https://$host$request_uri;
-#     }
-# }
-
-# server {
-#     listen 443 ssl;
-#     server_name wk-archi-o22a-15m-g1.fr www.wk-archi-o22a-15m-g1.fr;
-
-#     ssl_certificate /etc/letsencrypt/live/wk-archi-o22a-15m-g1.fr/fullchain.pem;
-#     ssl_certificate_key /etc/letsencrypt/live/wk-archi-o22a-15m-g1.fr/privkey.pem;
-
-#     location / {
-#         proxy_pass http://tea_web:80;
-#     }
-# }
