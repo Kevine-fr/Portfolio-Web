@@ -123,9 +123,9 @@ function makeStarfield(starTex, tier) {
   }));
 }
 
-// ─── Champ d'etoiles LOCAL (proche, autour de chaque astre — comme code 1) ──
-// Reproduit exactement la distribution du code 1 : disque en anneau autour
-// du centre avec yspread vertical, taille 0.2, palette chaude/froide melangee.
+// ─── Champ d'etoiles LOCAL avec recyclage infini ────────────────────────────
+// Renvoie { points, recycle(t) } : recycle decale les etoiles qui sortent du
+// champ visible pour en faire apparaitre constamment de nouvelles.
 function makeLocalStarfield(starTex, tier, center) {
   const N = tier === 'low' ? 1500 : tier === 'medium' ? 3000 : 5000;
   const pos = new Float32Array(N * 3);
@@ -134,10 +134,19 @@ function makeLocalStarfield(starTex, tier, center) {
     [1.0, 0.97, 0.88], [0.95, 0.92, 0.82],
     [1.0, 0.88, 0.65], [0.85, 0.92, 1.0],
   ];
+  // Tracker par etoile : son angle initial + age (pour drift radial subtil)
+  // On stocke pour pouvoir recycler quand l'etoile s'eloigne trop
+  const baseAngle = new Float32Array(N);
+  const baseRadius = new Float32Array(N);
+  const baseY = new Float32Array(N);
+
   for (let i = 0; i < N; i++) {
     const theta = Math.random() * Math.PI * 2;
     const r = 8 + Math.pow(Math.random(), 0.4) * 30;
     const yspread = (Math.random() - 0.5) * 25;
+    baseAngle[i]  = theta;
+    baseRadius[i] = r;
+    baseY[i]      = yspread;
     pos[i*3]   = center.x + Math.cos(theta) * r;
     pos[i*3+1] = center.y + yspread;
     pos[i*3+2] = center.z + Math.sin(theta) * r - 5;
@@ -150,11 +159,13 @@ function makeLocalStarfield(starTex, tier, center) {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
-  return new THREE.Points(geo, new THREE.PointsMaterial({
+  const points = new THREE.Points(geo, new THREE.PointsMaterial({
     size: 0.2, vertexColors: true, map: starTex,
     transparent: true, depthWrite: false,
     blending: THREE.AdditiveBlending, opacity: 1.0,
   }));
+
+  return { points, baseAngle, baseRadius, baseY, center, N };
 }
 
 // ─── CONSTELLATIONS reelles ─────────────────────────────────────────────────
@@ -200,13 +211,12 @@ const CONSTELLATIONS = [
 const magToSize = (mag) => Math.max(0.06, 0.18 - mag * 0.025);
 const magToOpacity = (mag) => Math.max(0.55, 1.0 - mag * 0.08);
 
-// ─── POSITIONS DES 5 ASTRES dans l'espace ────────────────────────────────────
 const ASTRE_POSITIONS = [
-  new THREE.Vector3(   0,   0,    0),    // 0 HERO
-  new THREE.Vector3( -45,   6,  -35),    // 1 ABOUT
-  new THREE.Vector3(  55,  -8,  -70),    // 2 SKILLS
-  new THREE.Vector3( -35,  22,  -95),    // 3 PROJECTS
-  new THREE.Vector3(  65,   0, -130),    // 4 CONTACT
+  new THREE.Vector3(   0,   0,    0),
+  new THREE.Vector3( -45,   6,  -35),
+  new THREE.Vector3(  55,  -8,  -70),
+  new THREE.Vector3( -35,  22,  -95),
+  new THREE.Vector3(  65,   0, -130),
 ];
 
 function buildCurvePoints() {
@@ -276,19 +286,16 @@ export default function PersistentScene({ activeSectionRef }) {
     const starTex = makeStarTexture();
     const brightStarTex = makeBrightStarTexture();
 
-    // ── FOND GALACTIQUE LOINTAIN (grands voyages) ─────────────────────────────
     const starfield = makeStarfield(starTex, tier);
     scene.add(starfield);
 
-    // ── ETOILES LOCALES (une par astre, meme distribution que code 1) ─────────
-    // Chaque astre a son propre champ d'etoiles proches, identique au code 1.
+    // ── ETOILES LOCALES avec recyclage infini par astre ─────────────────────
     const localStarfields = ASTRE_POSITIONS.map((pos) => {
       const sf = makeLocalStarfield(starTex, tier, pos);
-      scene.add(sf);
+      scene.add(sf.points);
       return sf;
     });
 
-    // Helpers texture (halos doux)
     const makeHaloTexture = (color1, color2) => {
       const cv = document.createElement('canvas');
       cv.width = cv.height = 256;
@@ -589,7 +596,6 @@ export default function PersistentScene({ activeSectionRef }) {
 
     scene.fog = new THREE.FogExp2(COLORS.bg, 0.0035);
 
-    // ── Interactions ──────────────────────────────────────────────────────────
     const onMouse = (e) => {
       stateRef.current.mx = (e.clientX / window.innerWidth  - 0.5) * 2;
       stateRef.current.my = -(e.clientY / window.innerHeight - 0.5) * 2;
@@ -613,6 +619,7 @@ export default function PersistentScene({ activeSectionRef }) {
     const clock = new THREE.Clock();
     let animId;
     let constRevealStart = 0;
+    let prevTime = 0;
 
     const vTmp = new THREE.Vector3();
     const vLook = new THREE.Vector3();
@@ -629,6 +636,8 @@ export default function PersistentScene({ activeSectionRef }) {
       animId = requestAnimationFrame(animate);
       if (!isVisible) return;
       const t = clock.getElapsedTime();
+      const dt = Math.max(0.001, t - prevTime);
+      prevTime = t;
       const state = stateRef.current;
 
       const targetSection = activeSectionRef.current ?? 0;
@@ -763,12 +772,41 @@ export default function PersistentScene({ activeSectionRef }) {
         arc.mesh.material.opacity = arc.baseOpacity * flicker;
       });
 
-      // ── ROTATION DES CHAMPS D'ETOILES ────────────────────────────────────────
-      // Fond galactique : rotation tres lente (comme code 2 original)
+      // ── ROTATION + RECYCLAGE INFINI DES CHAMPS D'ETOILES ────────────────────
+      // Le fond galactique tourne juste tres lentement (decor)
       starfield.rotation.y = t * 0.005;
-      // Etoiles locales : rotation douce (comme code 1 — 0.015 rad/s)
+
+      // Pour les locales : meme rotation Y MAIS chaque etoile derive en angle
+      // ce qui simule un flux continu. Quand son rayon devient trop grand
+      // (sortie du champ visible), on la recycle a un nouveau rayon proche.
+      // Vitesse angulaire equivalente a la rotation = 0.005 rad/s
+      const ANGULAR_SPEED = 0.005;
+      // Drift radial leger : les etoiles s'eloignent progressivement
+      // puis se font recycler. Vitesse "voyage" subtile.
+      const RADIAL_DRIFT = 0.06 * dt;   // unites/s
+      const R_MIN = 8;
+      const R_MAX = 38;   // 8 + 30 = limite naturelle de generation
+
       localStarfields.forEach((sf) => {
-        sf.rotation.y = t * 0.005;
+        const arr = sf.points.geometry.attributes.position.array;
+        const c = sf.center;
+        for (let i = 0; i < sf.N; i++) {
+          // Avance l'angle (= rotation Y) ET le rayon (= drift)
+          sf.baseAngle[i]  += ANGULAR_SPEED * dt;
+          sf.baseRadius[i] += RADIAL_DRIFT;
+          // Recyclage si etoile trop loin
+          if (sf.baseRadius[i] > R_MAX) {
+            sf.baseAngle[i]  = Math.random() * Math.PI * 2;
+            sf.baseRadius[i] = R_MIN + Math.random() * 2;   // respawn proche
+            sf.baseY[i]      = (Math.random() - 0.5) * 25;
+          }
+          const r = sf.baseRadius[i];
+          const a = sf.baseAngle[i];
+          arr[i*3]   = c.x + Math.cos(a) * r;
+          arr[i*3+1] = c.y + sf.baseY[i];
+          arr[i*3+2] = c.z + Math.sin(a) * r - 5;
+        }
+        sf.points.geometry.attributes.position.needsUpdate = true;
       });
 
       if (state.morphProgress >= 1) {
@@ -790,9 +828,10 @@ export default function PersistentScene({ activeSectionRef }) {
       envMap.dispose();
       haloTexGold.dispose();
       haloTexWhite.dispose();
-      // Champs d'etoiles
-      localStarfields.forEach(sf => { sf.geometry.dispose(); sf.material.dispose(); });
-      // Astres
+      localStarfields.forEach(sf => {
+        sf.points.geometry.dispose();
+        sf.points.material.dispose();
+      });
       heroSphere.geometry.dispose(); heroSphere.material.dispose();
       heroRings.forEach(r => { r.geometry.dispose(); r.material.dispose(); });
       aboutPlanet.geometry.dispose(); aboutPlanet.material.dispose();
