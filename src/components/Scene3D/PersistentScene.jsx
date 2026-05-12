@@ -539,18 +539,28 @@ export default function PersistentScene({ activeSectionRef }) {
 
     const dwarfStar = new THREE.Mesh(
       new THREE.SphereGeometry(1.8, heroSphereSegs, heroSphereSegs),
-      new THREE.MeshStandardMaterial({
-        color: 0xffffff, metalness: 0, roughness: 0,
-        emissive: 0xeaf4ff, emissiveIntensity: 3.5,
+      // MeshBasicMaterial : ignore tout l'eclairage de la scene
+      // -> la naine emet sa propre lumiere pure, quel que soit le voyage camera
+      // Couleur blanc tres legerement teinte bleu (~10 000 K, image de reference)
+      new THREE.MeshBasicMaterial({
+        color: 0xf0f8ff,    // blanc avec touche bleue glaciale
       })
     );
     dwarfStar.scale.setScalar(0.55);
     dwarfStar.position.copy(dwarfOffset);
     contactGroup.add(dwarfStar);
 
+    // ── LUMIERE PROPRE de la naine blanche ────────────────────────────────────
+    // Cree un eclairage local bleu-blanc qui rayonne depuis la naine
+    // pour eclairer ses propres arcs magnetiques (et le halo cote BG)
+    const dwarfLight = new THREE.PointLight(0xaaccff, 3.0, 25);
+    dwarfLight.position.copy(dwarfOffset);
+    contactGroup.add(dwarfLight);
+
     const dwarfHalo = new THREE.Sprite(new THREE.SpriteMaterial({
       map: haloTexWhite, transparent: true, depthWrite: false,
       blending: THREE.AdditiveBlending, opacity: 1.0,
+      color: 0x88bfff,   // bleu glacial sature (etait par defaut blanc)
     }));
     dwarfHalo.scale.set(9, 9, 1);
     dwarfHalo.position.set(dwarfOffset.x, dwarfOffset.y, dwarfOffset.z - 0.5);
@@ -559,6 +569,7 @@ export default function PersistentScene({ activeSectionRef }) {
     const dwarfGlow = new THREE.Sprite(new THREE.SpriteMaterial({
       map: haloTexWhite, transparent: true, depthWrite: false,
       blending: THREE.AdditiveBlending, opacity: 0.9,
+      color: 0xc8e0ff,   // glow plus proche, blanc avec touche bleue
     }));
     dwarfGlow.scale.set(4, 4, 1);
     dwarfGlow.position.copy(dwarfOffset);
