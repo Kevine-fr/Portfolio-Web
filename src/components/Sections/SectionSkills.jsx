@@ -141,7 +141,7 @@ export default function SectionSkills() {
           color: '#ffd97a', fontSize: '0.7rem', letterSpacing: '0.4em',
           margin: '0 0 1rem', opacity: 0.85,
         }}>
-          &gt; 02_SKILLS.CONSTELLATION
+          &gt; 02_COMPETENCES
         </p>
         <h2 style={{
           margin: 0, fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 900, lineHeight: 1,

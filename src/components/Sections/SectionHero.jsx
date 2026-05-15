@@ -84,7 +84,7 @@ export default function SectionHero({ onNavigate }) {
           transform: loaded ? 'translateX(0)' : 'translateX(-20px)',
           transition: 'all 0.8s ease 0.2s',
         }}>
-          &gt; INIT_PORTFOLIO_v2.1.0
+          &gt; PORTFOLIO_v2.1.0
         </p>
 
         <h1
@@ -124,7 +124,7 @@ export default function SectionHero({ onNavigate }) {
               color: '#d4c19a', cursor: 'pointer', fontSize: '0.7rem', letterSpacing: '0.2em',
               fontFamily: "'Courier New',monospace", position: 'relative', overflow: 'hidden',
             }}>
-            [ VOIR PROJETS ]
+            VOIR PROJETS
           </button>
           <button className="hero-btn-solid" style={{
             padding: '0.8rem 1.6rem',
@@ -167,7 +167,7 @@ export default function SectionHero({ onNavigate }) {
         <span style={{
           writingMode: 'vertical-rl', color: 'rgba(212,193,154,0.85)',
           fontSize: '0.6rem', letterSpacing: '0.3em',
-        }}>SCROLL TO EXPLORE</span>
+        }}>SCROLLER POUR EXPLORER</span>
         <div className="hero-scroll-line" />
       </div>
 

@@ -54,7 +54,7 @@ export default function SectionAbout() {
           color: '#ffd97a', fontSize: '0.7rem', letterSpacing: '0.4em',
           margin: '0 0 1rem', opacity: 0.85,
         }}>
-          &gt; 01_ABOUT.MD
+          &gt; 01_ABOUT
         </p>
         <h2 style={{
           margin: 0, fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 900, lineHeight: 1,

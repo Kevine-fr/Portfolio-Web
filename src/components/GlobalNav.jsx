@@ -33,7 +33,7 @@ export default function GlobalNav({ sections, activeId, onNavigate }) {
             color: '#d4c19a', fontSize: '0.7rem', letterSpacing: '0.35em',
             cursor: 'pointer',
           }}>
-          [ PORTFOLIO.SYS ]
+          PORTFOLIO
         </span>
 
         {/* Desktop nav */}
