@@ -1,39 +1,47 @@
-import { useEffect, useRef, useState } from 'react';
+import { useMemo } from 'react';
+import { useFetch } from '../../hooks/useFetch';
+import { useReveal } from '../../hooks/useReveal';
+import { FALLBACK_ABOUT } from '../../data/fallbacks';
 
-// Hook : revele quand l'element entre dans le viewport
-function useReveal() {
-  const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    if (!ref.current) return;
-    const obs = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { setVisible(true); obs.disconnect(); }
-    }, { threshold: 0.2 });
-    obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, []);
-  return { ref, visible };
+/**
+ * Render bio text with **double-asterisk** segments highlighted in gold.
+ * Returns an array of React children.
+ */
+function renderBio(text) {
+  if (!text) return null;
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    const m = part.match(/^\*\*([^*]+)\*\*$/);
+    if (m) {
+      return (
+        <span key={i} style={{ color: '#ffd97a' }}>
+          {m[1]}
+        </span>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
 }
-
-const TIMELINE = [
-  { year: '2021', title: 'Premiere ligne de code', desc: 'Decouverte du HTML/CSS via un site perso.' },
-  { year: '2022', title: 'Plongee dans React', desc: 'Premieres applications web interactives.' },
-  { year: '2023', title: 'Apprentissage backend', desc: 'Node.js, bases de donnees, architecture API.' },
-  { year: '2024', title: 'Specialisation 3D', desc: 'Three.js, WebGL, experiences immersives.' },
-  { year: '2025', title: 'Aujourd\'hui', desc: 'Creative developer full-stack.' },
-];
-
-const VALUES = [
-  { icon: '◆', title: 'Precision',   desc: 'Code propre, performance et accessibilite avant tout.' },
-  { icon: '✦', title: 'Curiosite',   desc: 'Veille technologique constante, exploration permanente.' },
-  { icon: '◈', title: 'Creativite',  desc: 'Chercher l\'experience qui marque, pas juste l\'utile.' },
-  { icon: '✧', title: 'Rigueur',     desc: 'Architecture pensee, tests, documentation.' },
-];
 
 export default function SectionAbout() {
   const intro = useReveal();
   const tline = useReveal();
   const vals  = useReveal();
+
+  const { data, loading } = useFetch('/about', FALLBACK_ABOUT);
+
+  // Sort by `order` if provided
+  const timeline = useMemo(
+    () => [...(data?.timeline || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
+    [data],
+  );
+  const values = useMemo(
+    () => [...(data?.values || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
+    [data],
+  );
+
+  const title = data?.title || 'Qui suis-je ?';
+  const bio   = data?.bio   || '';
 
   return (
     <section id="about" style={{
@@ -63,17 +71,14 @@ export default function SectionAbout() {
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           filter: 'drop-shadow(0 0 20px rgba(212,193,154,0.4))',
         }}>
-          Qui suis-je ?
+          {title}
         </h2>
         <p style={{
           color: 'rgba(245,239,224,0.85)', fontSize: 'clamp(0.95rem, 2vw, 1.1rem)',
           lineHeight: 1.75, marginTop: '2rem', maxWidth: '550px',
+          whiteSpace: 'pre-wrap',
         }}>
-          Developpeur passionne par la convergence du <span style={{ color: '#ffd97a' }}>design</span>,
-          de la <span style={{ color: '#ffd97a' }}>3D</span> et de l&apos;
-          <span style={{ color: '#ffd97a' }}>ingenierie logicielle</span>.
-          Je construis des interfaces qui marquent — entre rigueur technique et
-          imagination visuelle.
+          {renderBio(bio)}
         </p>
       </div>
 
@@ -87,102 +92,108 @@ export default function SectionAbout() {
       }}>
 
         {/* TIMELINE */}
-        <div ref={tline.ref} style={{
-          opacity: tline.visible ? 1 : 0,
-          transform: tline.visible ? 'translateX(0)' : 'translateX(-30px)',
-          transition: 'all 1s ease 0.2s',
-        }}>
-          <h3 style={{
-            color: '#d4c19a', fontSize: '0.7rem', letterSpacing: '0.35em',
-            margin: '0 0 2rem', fontWeight: 700,
+        {timeline.length > 0 && (
+          <div ref={tline.ref} style={{
+            opacity: tline.visible ? 1 : 0,
+            transform: tline.visible ? 'translateX(0)' : 'translateX(-30px)',
+            transition: 'all 1s ease 0.2s',
           }}>
-            &gt; PARCOURS.LOG
-          </h3>
-          <div style={{ position: 'relative', paddingLeft: '1.5rem' }}>
-            {/* Ligne verticale */}
-            <div style={{
-              position: 'absolute', left: '0.3rem', top: '0.3rem', bottom: '0.3rem',
-              width: '1px', background: 'linear-gradient(to bottom, rgba(212,193,154,0.6), transparent)',
-            }} />
-            {TIMELINE.map((item, i) => (
-              <div key={item.year} style={{
-                position: 'relative', marginBottom: '1.5rem',
-                opacity: tline.visible ? 1 : 0,
-                transform: tline.visible ? 'translateX(0)' : 'translateX(-15px)',
-                transition: `all 0.6s ease ${0.4 + i * 0.12}s`,
-              }}>
-                {/* Point sur la ligne */}
-                <div style={{
-                  position: 'absolute', left: '-1.5rem', top: '0.3rem',
-                  width: '11px', height: '11px',
-                  borderRadius: '50%', background: '#ffd97a',
-                  boxShadow: '0 0 12px #ffd97a',
-                  border: '2px solid #050309',
-                }} />
-                <div style={{
-                  color: '#ffd97a', fontSize: '0.7rem', letterSpacing: '0.2em',
-                  fontWeight: 700,
+            <h3 style={{
+              color: '#d4c19a', fontSize: '0.7rem', letterSpacing: '0.35em',
+              margin: '0 0 2rem', fontWeight: 700,
+            }}>
+              &gt; PARCOURS.LOG
+            </h3>
+            <div style={{ position: 'relative', paddingLeft: '1.5rem' }}>
+              <div style={{
+                position: 'absolute', left: '0.3rem', top: '0.3rem', bottom: '0.3rem',
+                width: '1px', background: 'linear-gradient(to bottom, rgba(212,193,154,0.6), transparent)',
+              }} />
+              {timeline.map((item, i) => (
+                <div key={i} style={{
+                  position: 'relative', marginBottom: '1.5rem',
+                  opacity: tline.visible ? 1 : 0,
+                  transform: tline.visible ? 'translateX(0)' : 'translateX(-15px)',
+                  transition: `all 0.6s ease ${0.4 + i * 0.12}s`,
                 }}>
-                  {item.year}
+                  <div style={{
+                    position: 'absolute', left: '-1.5rem', top: '0.3rem',
+                    width: '11px', height: '11px',
+                    borderRadius: '50%', background: '#ffd97a',
+                    boxShadow: '0 0 12px #ffd97a',
+                    border: '2px solid #050309',
+                  }} />
+                  <div style={{
+                    color: '#ffd97a', fontSize: '0.7rem', letterSpacing: '0.2em',
+                    fontWeight: 700,
+                  }}>
+                    {item.year}
+                  </div>
+                  <div style={{
+                    color: 'rgba(245,239,224,0.95)', fontSize: '0.95rem',
+                    marginTop: '0.3rem', fontWeight: 600,
+                  }}>
+                    {item.title}
+                  </div>
+                  {item.description && (
+                    <div style={{
+                      color: 'rgba(245,239,224,0.65)', fontSize: '0.8rem',
+                      marginTop: '0.2rem', lineHeight: 1.5,
+                    }}>
+                      {item.description}
+                    </div>
+                  )}
                 </div>
-                <div style={{
-                  color: 'rgba(245,239,224,0.95)', fontSize: '0.95rem',
-                  marginTop: '0.3rem', fontWeight: 600,
-                }}>
-                  {item.title}
-                </div>
-                <div style={{
-                  color: 'rgba(245,239,224,0.65)', fontSize: '0.8rem',
-                  marginTop: '0.2rem', lineHeight: 1.5,
-                }}>
-                  {item.desc}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* VALEURS */}
-        <div ref={vals.ref} style={{
-          opacity: vals.visible ? 1 : 0,
-          transform: vals.visible ? 'translateX(0)' : 'translateX(30px)',
-          transition: 'all 1s ease 0.4s',
-        }}>
-          <h3 style={{
-            color: '#d4c19a', fontSize: '0.7rem', letterSpacing: '0.35em',
-            margin: '0 0 2rem', fontWeight: 700,
+        {values.length > 0 && (
+          <div ref={vals.ref} style={{
+            opacity: vals.visible ? 1 : 0,
+            transform: vals.visible ? 'translateX(0)' : 'translateX(30px)',
+            transition: 'all 1s ease 0.4s',
           }}>
-            &gt; VALEURS.CFG
-          </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            {VALUES.map((v, i) => (
-              <div key={v.title}
-                className="value-card"
-                style={{
-                  padding: '1.2rem',
-                  background: 'rgba(212,193,154,0.04)',
-                  border: '1px solid rgba(212,193,154,0.15)',
-                  borderRadius: '4px',
-                  opacity: vals.visible ? 1 : 0,
-                  transform: vals.visible ? 'translateY(0)' : 'translateY(15px)',
-                  transition: `all 0.6s ease ${0.6 + i * 0.1}s, background 0.25s, border-color 0.25s`,
-                  cursor: 'default',
-                }}>
-                <div style={{
-                  color: '#ffd97a', fontSize: '1.5rem', marginBottom: '0.5rem',
-                  textShadow: '0 0 15px rgba(255,217,122,0.5)',
-                }}>{v.icon}</div>
-                <div style={{
-                  color: 'rgba(245,239,224,0.95)', fontSize: '0.9rem',
-                  letterSpacing: '0.1em', fontWeight: 700, marginBottom: '0.4rem',
-                }}>{v.title}</div>
-                <div style={{
-                  color: 'rgba(245,239,224,0.65)', fontSize: '0.75rem', lineHeight: 1.5,
-                }}>{v.desc}</div>
-              </div>
-            ))}
+            <h3 style={{
+              color: '#d4c19a', fontSize: '0.7rem', letterSpacing: '0.35em',
+              margin: '0 0 2rem', fontWeight: 700,
+            }}>
+              &gt; VALEURS.CFG
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              {values.map((v, i) => (
+                <div key={i}
+                  className="value-card"
+                  style={{
+                    padding: '1.2rem',
+                    background: 'rgba(212,193,154,0.04)',
+                    border: '1px solid rgba(212,193,154,0.15)',
+                    borderRadius: '4px',
+                    opacity: vals.visible ? 1 : 0,
+                    transform: vals.visible ? 'translateY(0)' : 'translateY(15px)',
+                    transition: `all 0.6s ease ${0.6 + i * 0.1}s, background 0.25s, border-color 0.25s`,
+                    cursor: 'default',
+                  }}>
+                  <div style={{
+                    color: '#ffd97a', fontSize: '1.5rem', marginBottom: '0.5rem',
+                    textShadow: '0 0 15px rgba(255,217,122,0.5)',
+                  }}>{v.icon}</div>
+                  <div style={{
+                    color: 'rgba(245,239,224,0.95)', fontSize: '0.9rem',
+                    letterSpacing: '0.1em', fontWeight: 700, marginBottom: '0.4rem',
+                  }}>{v.title}</div>
+                  {v.description && (
+                    <div style={{
+                      color: 'rgba(245,239,224,0.65)', fontSize: '0.75rem', lineHeight: 1.5,
+                    }}>{v.description}</div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <style>{`
@@ -191,7 +202,6 @@ export default function SectionAbout() {
           border-color: rgba(255,217,122,0.4) !important;
           transform: translateY(-3px) !important;
         }
-
         @media (max-width: 900px) {
           .about-grid { grid-template-columns: 1fr !important; }
         }

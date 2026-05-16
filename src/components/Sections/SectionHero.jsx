@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react';
+import { useFetch } from '../../hooks/useFetch';
+import { resolveMediaUrl } from '../../lib/api';
+import { FALLBACK_ABOUT } from '../../data/fallbacks';
 
 function useTyping(texts, speed = 80) {
   const [displayed, setDisplayed] = useState('');
@@ -57,6 +60,11 @@ export default function SectionHero({ onNavigate }) {
   const xp     = useCounter(3,  1500, 800);
   const proj   = useCounter(20, 2000, 1000);
   const techno = useCounter(12, 1800, 1200);
+
+  // CV download from About endpoint
+  const { data: about } = useFetch('/about', FALLBACK_ABOUT);
+  const cvHref = resolveMediaUrl(about?.cvUrl);
+  const cvFilename = about?.cvFilename || (about?.cvUrl ? 'CV.pdf' : '');
 
   useEffect(() => { setTimeout(() => setLoaded(true), 300); }, []);
 
@@ -126,15 +134,25 @@ export default function SectionHero({ onNavigate }) {
             }}>
             VOIR PROJETS
           </button>
-          <button className="hero-btn-solid" style={{
-            padding: '0.8rem 1.6rem',
-            background: 'linear-gradient(135deg,#d4c19a 0%,#8a6f3f 100%)',
-            border: 'none', color: '#050309', cursor: 'pointer', fontWeight: 700,
-            fontSize: '0.7rem', letterSpacing: '0.2em', fontFamily: "'Courier New',monospace",
-            boxShadow: '0 0 18px rgba(212,193,154,0.45)', position: 'relative', overflow: 'hidden',
-          }}>
-            TELECHARGER CV
-          </button>
+          {cvHref && (
+            <a
+              href={cvHref}
+              download={cvFilename}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hero-btn-solid"
+              style={{
+                padding: '0.8rem 1.6rem',
+                background: 'linear-gradient(135deg,#d4c19a 0%,#8a6f3f 100%)',
+                border: 'none', color: '#050309', cursor: 'pointer', fontWeight: 700,
+                fontSize: '0.7rem', letterSpacing: '0.2em', fontFamily: "'Courier New',monospace",
+                boxShadow: '0 0 18px rgba(212,193,154,0.45)', position: 'relative', overflow: 'hidden',
+                textDecoration: 'none',
+                display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+              }}>
+              TELECHARGER CV ↓
+            </a>
+          )}
         </div>
 
         <div style={{

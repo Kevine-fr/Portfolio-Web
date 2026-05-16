@@ -1,4 +1,10 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+
+const EXTRA_LINKS = [
+  { to: '/projets',  label: 'PROJETS_PAGE' },
+  { to: '/parcours', label: 'PARCOURS' },
+];
 
 export default function GlobalNav({ sections, activeId, onNavigate }) {
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -24,6 +30,7 @@ export default function GlobalNav({ sections, activeId, onNavigate }) {
         borderBottom: '1px solid rgba(212,193,154,0.12)',
         background: 'rgba(5,3,9,0.7)',
         backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
       }}>
         {/* Logo */}
         <span
@@ -36,8 +43,8 @@ export default function GlobalNav({ sections, activeId, onNavigate }) {
           PORTFOLIO
         </span>
 
-        {/* Desktop nav */}
-        <div className="nav-desktop" style={{ display: 'flex', gap: '2rem' }}>
+        {/* Desktop nav — anchor sections + extra route links */}
+        <div className="nav-desktop" style={{ display: 'flex', gap: '1.8rem', alignItems: 'center' }}>
           {sections.slice(1).map(s => {
             const active = s.id === activeId;
             return (
@@ -63,6 +70,28 @@ export default function GlobalNav({ sections, activeId, onNavigate }) {
               </span>
             );
           })}
+
+          {/* Visual separator */}
+          <span style={{
+            width: '1px', height: '14px',
+            background: 'rgba(212,193,154,0.25)',
+          }} />
+
+          {EXTRA_LINKS.map(link => (
+            <Link
+              key={link.to}
+              to={link.to}
+              className="hero-nav-item"
+              style={{
+                color: 'rgba(212,193,154,0.7)',
+                fontSize: '0.65rem',
+                letterSpacing: '0.18em',
+                textDecoration: 'none',
+                transition: 'color 0.3s',
+              }}>
+              {link.label}↗
+            </Link>
+          ))}
         </div>
 
         {/* Mobile burger */}
@@ -88,9 +117,10 @@ export default function GlobalNav({ sections, activeId, onNavigate }) {
           zIndex: 19,
           background: 'rgba(5,3,9,0.97)',
           backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
-          gap: '2rem',
+          gap: '1.5rem',
         }}>
           {sections.slice(1).map(s => {
             const active = s.id === activeId;
@@ -107,6 +137,26 @@ export default function GlobalNav({ sections, activeId, onNavigate }) {
               </span>
             );
           })}
+
+          <span style={{
+            width: '40px', height: '1px',
+            background: 'rgba(212,193,154,0.3)',
+            margin: '0.5rem 0',
+          }} />
+
+          {EXTRA_LINKS.map(link => (
+            <Link
+              key={link.to}
+              to={link.to}
+              onClick={() => setMobileOpen(false)}
+              style={{
+                color: 'rgba(212,193,154,0.85)',
+                fontSize: '0.95rem', letterSpacing: '0.3em',
+                textDecoration: 'none',
+              }}>
+              {link.label}
+            </Link>
+          ))}
         </div>
       )}
 

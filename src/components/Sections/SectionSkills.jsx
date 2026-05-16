@@ -1,61 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { useMemo } from 'react';
+import { useFetch } from '../../hooks/useFetch';
+import { useReveal } from '../../hooks/useReveal';
+import { FALLBACK_SKILLS } from '../../data/fallbacks';
 
-function useReveal() {
-  const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    if (!ref.current) return;
-    const obs = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { setVisible(true); obs.disconnect(); }
-    }, { threshold: 0.15 });
-    obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, []);
-  return { ref, visible };
-}
-
-const SKILLS = [
-  {
-    category: 'FRONTEND',
-    items: [
-      { name: 'React',      level: 92 },
-      { name: 'TypeScript', level: 85 },
-      { name: 'Three.js',   level: 80 },
-      { name: 'TailwindCSS',level: 88 },
-      { name: 'Framer Motion', level: 75 },
-    ],
-  },
-  {
-    category: 'BACKEND',
-    items: [
-      { name: 'Node.js',  level: 88 },
-      { name: 'Express',  level: 85 },
-      { name: 'MongoDB',  level: 78 },
-      { name: 'PostgreSQL', level: 72 },
-      { name: 'REST/GraphQL', level: 80 },
-    ],
-  },
-  {
-    category: 'DEVOPS',
-    items: [
-      { name: 'Docker',   level: 75 },
-      { name: 'Git',      level: 90 },
-      { name: 'CI/CD',    level: 70 },
-      { name: 'AWS',      level: 65 },
-      { name: 'Linux',    level: 78 },
-    ],
-  },
-  {
-    category: 'DESIGN',
-    items: [
-      { name: 'Figma',    level: 82 },
-      { name: 'UX/UI',    level: 80 },
-      { name: 'Motion',   level: 75 },
-      { name: 'Typo',     level: 70 },
-      { name: 'Colors',   level: 78 },
-    ],
-  },
-];
+const CATEGORY_LABELS = {
+  frontend: 'FRONTEND',
+  backend:  'BACKEND',
+  tools:    'DEVOPS',
+  design:   'DESIGN',
+  other:    'AUTRE',
+};
+const CATEGORY_ORDER = ['frontend', 'backend', 'tools', 'design', 'other'];
 
 function SkillBar({ name, level, delay, visible }) {
   return (
@@ -106,11 +61,11 @@ function SkillCategory({ category, items, baseDelay }) {
         margin: '0 0 1.5rem', fontWeight: 700,
         textShadow: '0 0 12px rgba(255,217,122,0.5)',
       }}>
-        &gt; {category}
+        &gt; {CATEGORY_LABELS[category] || category.toUpperCase()}
       </h3>
       {items.map((item, i) => (
         <SkillBar
-          key={item.name}
+          key={item._id || item.name}
           name={item.name}
           level={item.level}
           delay={baseDelay + 0.2 + i * 0.1}
@@ -123,6 +78,24 @@ function SkillCategory({ category, items, baseDelay }) {
 
 export default function SectionSkills() {
   const header = useReveal();
+  const { data, loading } = useFetch('/skills', FALLBACK_SKILLS);
+
+  // Group skills by category, keep only visible, sort by order then level desc
+  const grouped = useMemo(() => {
+    const visible = (data || []).filter(s => s.visible !== false);
+    const g = {};
+    for (const cat of CATEGORY_ORDER) g[cat] = [];
+    visible.forEach(s => {
+      const cat = CATEGORY_ORDER.includes(s.category) ? s.category : 'other';
+      g[cat].push(s);
+    });
+    Object.values(g).forEach(arr =>
+      arr.sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || b.level - a.level),
+    );
+    return g;
+  }, [data]);
+
+  const populatedCategories = CATEGORY_ORDER.filter(cat => grouped[cat].length > 0);
 
   return (
     <section id="skills" style={{
@@ -160,21 +133,27 @@ export default function SectionSkills() {
         </p>
       </div>
 
-      <div className="skills-grid" style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
-        gap: '1.5rem',
-        maxWidth: '1100px', width: '100%',
-      }}>
-        {SKILLS.map((cat, i) => (
-          <SkillCategory
-            key={cat.category}
-            category={cat.category}
-            items={cat.items}
-            baseDelay={0.1 * i}
-          />
-        ))}
-      </div>
+      {loading && !data ? (
+        <p style={{ color: 'rgba(212,193,154,0.6)', fontSize: '0.7rem', letterSpacing: '0.3em' }}>
+          CHARGEMENT…
+        </p>
+      ) : (
+        <div className="skills-grid" style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: '1.5rem',
+          maxWidth: '1100px', width: '100%',
+        }}>
+          {populatedCategories.map((cat, i) => (
+            <SkillCategory
+              key={cat}
+              category={cat}
+              items={grouped[cat]}
+              baseDelay={0.1 * i}
+            />
+          ))}
+        </div>
+      )}
 
       <style>{`
         .skill-category:hover {

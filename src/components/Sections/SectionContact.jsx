@@ -1,43 +1,46 @@
-import { useEffect, useRef, useState } from 'react';
-
-function useReveal() {
-  const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    if (!ref.current) return;
-    const obs = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { setVisible(true); obs.disconnect(); }
-    }, { threshold: 0.15 });
-    obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, []);
-  return { ref, visible };
-}
+import { useState } from 'react';
+import { apiPost } from '../../lib/api';
+import { useReveal } from '../../hooks/useReveal';
 
 // Palette VRAIE NAINE BLANCHE — ~10 000 K, blanc-bleu intense
-// Plus froid et plus pur que l'ancien #c8e8ff
 const DWARF = {
-  primary:  '#e8f4ff',    // blanc bleute principal (texte fort)
-  glow:     '#aaccff',    // bleu glacial (accents lumineux)
-  accent:   '#d6e8ff',    // intermediaire
-  deepBlue: '#6a96c8',    // bleu acier profond (gradient bas)
+  primary:  '#e8f4ff',
+  glow:     '#aaccff',
+  accent:   '#d6e8ff',
+  deepBlue: '#6a96c8',
 };
 
 export default function SectionContact() {
   const header = useReveal();
   const form   = useReveal();
-  const [data, setData] = useState({ name: '', email: '', message: '' });
-  const [status, setStatus] = useState('idle');
+  const [data, setData]     = useState({ name: '', email: '', subject: '', message: '' });
+  const [status, setStatus] = useState('idle'); // idle | sending | sent | error
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handle = (e) => setData({ ...data, [e.target.name]: e.target.value });
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    setStatus('sending');
-    setTimeout(() => {
+    setStatus('sending'); setErrorMsg('');
+    try {
+      await apiPost('/contacts', {
+        name:    data.name.trim(),
+        email:   data.email.trim(),
+        subject: data.subject.trim() || undefined,
+        message: data.message.trim(),
+      });
       setStatus('sent');
-      setTimeout(() => { setStatus('idle'); setData({ name: '', email: '', message: '' }); }, 3000);
-    }, 1500);
+      setTimeout(() => {
+        setStatus('idle');
+        setData({ name: '', email: '', subject: '', message: '' });
+      }, 3500);
+    } catch (err) {
+      setStatus('error');
+      const msg = err?.response?.data?.message;
+      const text = Array.isArray(msg) ? msg.join(', ') : msg || 'Echec de transmission. Reessayez plus tard.';
+      setErrorMsg(text);
+      setTimeout(() => setStatus('idle'), 4000);
+    }
   };
 
   return (
@@ -94,6 +97,7 @@ export default function SectionContact() {
             letterSpacing: '0.3em', marginBottom: '0.5rem',
           }}>&gt; NOM</label>
           <input type="text" name="name" value={data.name} onChange={handle} required
+            disabled={status === 'sending'}
             className="signal-input" placeholder="Votre identite..." />
         </div>
 
@@ -103,7 +107,18 @@ export default function SectionContact() {
             letterSpacing: '0.3em', marginBottom: '0.5rem',
           }}>&gt; FREQUENCE_RETOUR (EMAIL)</label>
           <input type="email" name="email" value={data.email} onChange={handle} required
+            disabled={status === 'sending'}
             className="signal-input" placeholder="contact@galaxy.io" />
+        </div>
+
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label style={{
+            display: 'block', color: DWARF.glow, fontSize: '0.65rem',
+            letterSpacing: '0.3em', marginBottom: '0.5rem',
+          }}>&gt; OBJET (FACULTATIF)</label>
+          <input type="text" name="subject" value={data.subject} onChange={handle}
+            disabled={status === 'sending'}
+            className="signal-input" placeholder="Sujet de votre message..." />
         </div>
 
         <div style={{ marginBottom: '2rem' }}>
@@ -112,27 +127,47 @@ export default function SectionContact() {
             letterSpacing: '0.3em', marginBottom: '0.5rem',
           }}>&gt; MESSAGE</label>
           <textarea name="message" value={data.message} onChange={handle} required rows={6}
+            disabled={status === 'sending'}
             className="signal-input" placeholder="Transmettez votre signal..." />
         </div>
 
-        <button type="submit" disabled={status !== 'idle'}
+        {status === 'error' && (
+          <div style={{
+            padding: '0.75rem 1rem',
+            marginBottom: '1.5rem',
+            background: 'rgba(255,100,100,0.08)',
+            border: '1px solid rgba(255,100,100,0.4)',
+            color: '#ff9b9b',
+            fontSize: '0.75rem',
+            letterSpacing: '0.05em',
+            borderRadius: '2px',
+          }}>
+            ✗ {errorMsg}
+          </div>
+        )}
+
+        <button type="submit" disabled={status === 'sending' || status === 'sent'}
           className="signal-btn"
           style={{
             padding: '0.9rem 2rem',
             background: status === 'sent'
               ? 'linear-gradient(135deg, #7cc97c, #5aa05a)'
-              : `linear-gradient(135deg, ${DWARF.primary} 0%, ${DWARF.deepBlue} 100%)`,
-            border: 'none', color: '#050309', cursor: status === 'idle' ? 'pointer' : 'wait',
+              : status === 'error'
+                ? 'linear-gradient(135deg, #ff9b9b, #c06868)'
+                : `linear-gradient(135deg, ${DWARF.primary} 0%, ${DWARF.deepBlue} 100%)`,
+            border: 'none', color: '#050309',
+            cursor: status === 'idle' || status === 'error' ? 'pointer' : 'wait',
             fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.25em',
             fontFamily: "'Courier New',monospace",
             boxShadow: '0 0 25px rgba(170,204,255,0.6)',
             position: 'relative', overflow: 'hidden',
-            opacity: status !== 'idle' ? 0.85 : 1,
+            opacity: status === 'sending' ? 0.85 : 1,
             transition: 'all 0.3s',
           }}>
           {status === 'idle'    && 'EMETTRE LE SIGNAL →'}
           {status === 'sending' && 'TRANSMISSION...'}
           {status === 'sent'    && '✓ SIGNAL CAPTE'}
+          {status === 'error'   && 'REESSAYER →'}
         </button>
 
         <div style={{
@@ -173,14 +208,13 @@ export default function SectionContact() {
           transition: all 0.3s;
           box-sizing: border-box;
         }
-        .signal-input::placeholder {
-          color: rgba(245,250,255,0.35);
-        }
+        .signal-input::placeholder { color: rgba(245,250,255,0.35); }
         .signal-input:focus {
           background: rgba(170,204,255,0.08);
           border-color: rgba(232,244,255,0.7);
           box-shadow: 0 0 18px rgba(170,204,255,0.3);
         }
+        .signal-input:disabled { opacity: 0.5; cursor: not-allowed; }
         textarea.signal-input {
           resize: vertical;
           min-height: 120px;
