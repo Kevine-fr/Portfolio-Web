@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useFetch } from '../../hooks/useFetch';
 import { resolveMediaUrl } from '../../lib/api';
 import { FALLBACK_ABOUT } from '../../data/fallbacks';
@@ -51,18 +51,51 @@ function useGlitch(intervalMs = 7000) {
   return glitching;
 }
 
-const ROLES = ['Developpeur Full-Stack','Architecte Cloud','Passionne 3D & WebGL','Creative Developer'];
+// Sub-component required because useCounter is a hook (can't call hooks in .map)
+function StatItem({ value, label, delay }) {
+  const animated = useCounter(value, 1800, delay);
+  return (
+    <div>
+      <div style={{
+        color: '#ffd97a', fontSize: 'clamp(1.3rem, 3vw, 1.5rem)', fontWeight: 900,
+        textShadow: '0 0 12px rgba(255,217,122,0.6)',
+      }}>{animated}+</div>
+      <div style={{
+        color: 'rgba(245,239,224,0.55)', fontSize: '0.6rem',
+        letterSpacing: '0.2em', marginTop: '0.3rem',
+      }}>{label}</div>
+    </div>
+  );
+}
+
+const DEFAULT_ROLES = ['Developpeur Full-Stack'];
 
 export default function SectionHero({ onNavigate }) {
   const [loaded, setLoaded] = useState(false);
-  const role = useTyping(ROLES, 80);
   const glitching = useGlitch(7000);
-  const xp     = useCounter(3,  1500, 800);
-  const proj   = useCounter(20, 2000, 1000);
-  const techno = useCounter(12, 1800, 1200);
 
-  // CV download from About endpoint
+  // Fetch all dynamic content from /about
   const { data: about } = useFetch('/about', FALLBACK_ABOUT);
+
+  // Memoize derived data so referential equality stays stable across renders.
+  // useTyping depends on the texts array — a new array reference each render
+  // would re-trigger the effect endlessly.
+  const firstName = (about?.firstName || FALLBACK_ABOUT.firstName || 'Kevine').trim();
+  const lastName  = (about?.lastName  || FALLBACK_ABOUT.lastName  || 'DIANTOUADI').trim();
+  const tagline   = (about?.tagline   || FALLBACK_ABOUT.tagline   || '').trim();
+
+  const roles = useMemo(() => {
+    const fromApi = (about?.roles || []).filter(Boolean);
+    return fromApi.length > 0 ? fromApi : DEFAULT_ROLES;
+  }, [about?.roles]);
+
+  const stats = useMemo(() => {
+    const fromApi = about?.stats || [];
+    return [...fromApi].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }, [about?.stats]);
+
+  const role = useTyping(roles, 80);
+
   const cvHref = resolveMediaUrl(about?.cvUrl);
   const cvFilename = about?.cvFilename || (about?.cvUrl ? 'CV.pdf' : '');
 
@@ -104,9 +137,11 @@ export default function SectionHero({ onNavigate }) {
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
             filter: 'drop-shadow(0 0 30px rgba(212,193,154,0.5))',
         }}>
-          Kevine<br />
+          {firstName}<br />
           <span style={{ background: 'linear-gradient(180deg, #d4c19a 0%, #8a6f3f 100%)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>DIANTOUADI</span>
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            {lastName?.toUpperCase()}
+          </span>
         </h1>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', height: '1.8rem', margin: '1.4rem 0 0.2rem' }}>
@@ -115,14 +150,15 @@ export default function SectionHero({ onNavigate }) {
           <span style={{ color: '#ffd97a', animation: 'blink 0.9s step-end infinite' }}>_</span>
         </div>
 
-        <p style={{
-          color: 'rgba(245,239,224,0.75)',
-          fontSize: 'clamp(0.85rem, 1.8vw, 0.95rem)',
-          margin: '1.2rem 0 2rem', lineHeight: 1.7, maxWidth: '430px',
-        }}>
-          Experiences web immersives a la croisee du design, de la 3D
-          et de l&apos;ingenierie logicielle.
-        </p>
+        {tagline && (
+          <p style={{
+            color: 'rgba(245,239,224,0.75)',
+            fontSize: 'clamp(0.85rem, 1.8vw, 0.95rem)',
+            margin: '1.2rem 0 2rem', lineHeight: 1.7, maxWidth: '430px',
+          }}>
+            {tagline}
+          </p>
+        )}
 
         <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
           <button onClick={() => onNavigate?.('projects')}
@@ -155,24 +191,22 @@ export default function SectionHero({ onNavigate }) {
           )}
         </div>
 
-        <div style={{
-          display: 'flex', gap: 'clamp(1.5rem, 4vw, 2.5rem)', marginTop: '2.5rem',
-          borderTop: '1px solid rgba(245,239,224,0.12)', paddingTop: '1.5rem',
-          flexWrap: 'wrap',
-        }}>
-          {[[xp,'ANS XP'],[proj,'PROJETS'],[techno,'TECHNOS']].map(([v,l]) => (
-            <div key={l}>
-              <div style={{
-                color: '#ffd97a', fontSize: 'clamp(1.3rem, 3vw, 1.5rem)', fontWeight: 900,
-                textShadow: '0 0 12px rgba(255,217,122,0.6)',
-              }}>{v}+</div>
-              <div style={{
-                color: 'rgba(245,239,224,0.55)', fontSize: '0.6rem',
-                letterSpacing: '0.2em', marginTop: '0.3rem',
-              }}>{l}</div>
-            </div>
-          ))}
-        </div>
+        {stats.length > 0 && (
+          <div style={{
+            display: 'flex', gap: 'clamp(1.5rem, 4vw, 2.5rem)', marginTop: '2.5rem',
+            borderTop: '1px solid rgba(245,239,224,0.12)', paddingTop: '1.5rem',
+            flexWrap: 'wrap',
+          }}>
+            {stats.map((s, i) => (
+              <StatItem
+                key={`${s.label}-${i}`}
+                value={s.value || 0}
+                label={s.label}
+                delay={800 + i * 200}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Scroll indicator (desktop only) */}

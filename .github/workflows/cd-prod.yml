@@ -50,11 +50,10 @@ jobs:
           git reset --hard origin/main
 
           echo "→ Génération du .env..."
-          cat > .env.local << 'ENVEOF'
-          VITE_API_URL=${{ secrets.VITE_API_URL }}
-          VITE_SITE_URL=${{ secrets.VITE_SITE_URL }}
+          cat > .env << 'ENVEOF'
+          
           ENVEOF
-          chmod 600 .env.local
+          chmod 600 .env
 
           echo "→ Build et démarrage..."
 

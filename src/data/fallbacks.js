@@ -43,9 +43,25 @@ export const FALLBACK_EXPERIENCES = [];
 export const FALLBACK_EDUCATION   = [];
 
 export const FALLBACK_ABOUT = {
+  // Hero
+  firstName: 'Kevine',
+  lastName:  'DIANTOUADI',
+  tagline:   "Experiences web immersives a la croisee du design, de la 3D et de l'ingenierie logicielle.",
+  roles: [
+    'Developpeur Full-Stack',
+    'Architecte Cloud',
+    'Passionne 3D & WebGL',
+    'Creative Developer',
+  ],
+  stats: [
+    { label: 'ANS XP',  value: 3,  order: 0 },
+    { label: 'PROJETS', value: 20, order: 1 },
+    { label: 'TECHNOS', value: 12, order: 2 },
+  ],
+  // About
   title: 'Qui suis-je ?',
   bio: "Developpeur passionne par la convergence du **design**, de la **3D** et de l'**ingenierie logicielle**. Je construis des interfaces qui marquent — entre rigueur technique et imagination visuelle.",
-  cvUrl: '',           // Empty by default — button is hidden until admin uploads a CV
+  cvUrl: '',
   cvFilename: '',
   timeline: [
     { year: '2021', title: 'Premiere ligne de code',  description: 'Decouverte du HTML/CSS via un site perso.' },
