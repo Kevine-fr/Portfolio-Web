@@ -43,7 +43,7 @@ jobs:
         run: |
           ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} << EOF
 
-          cd /home/kevine/deploy/Portfolio-Web
+          cd /home/${{ secrets.VPS_USERNAME }}/deploy/Portfolio-Web
           
           echo "→ Pull du code..."
           git fetch origin
