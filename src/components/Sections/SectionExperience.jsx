@@ -218,29 +218,31 @@ export default function SectionExperience() {
             </div>
 
             {total > items.length && (
-              <Link to="/experiences" style={{
-                alignSelf: 'flex-start',
-                marginTop: '2rem',
-                padding: '0.8rem 1.6rem',
-                border: '1px solid rgba(255,217,122,0.45)',
-                color: '#ffd97a',
-                fontSize: '0.7rem',
-                letterSpacing: '0.25em',
-                textDecoration: 'none',
-                transition: 'all 0.3s',
-                boxShadow: '0 0 20px rgba(255,217,122,0.18)',
-                background: 'rgba(5,3,9,0.5)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255,217,122,0.12)';
-                e.currentTarget.style.boxShadow = '0 0 30px rgba(255,217,122,0.5)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(5,3,9,0.5)';
-                e.currentTarget.style.boxShadow = '0 0 20px rgba(255,217,122,0.18)';
-              }}>
-                EXPLORER TOUTES LES ORBITES ({total}) →
-              </Link>
+              <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '2rem' }}>
+                <Link to="/experiences" style={{
+                  alignSelf: 'flex-start',
+                  marginTop: '2rem',
+                  padding: '0.8rem 1.6rem',
+                  border: '1px solid rgba(255,217,122,0.45)',
+                  color: '#ffd97a',
+                  fontSize: '0.7rem',
+                  letterSpacing: '0.25em',
+                  textDecoration: 'none',
+                  transition: 'all 0.3s',
+                  boxShadow: '0 0 20px rgba(255,217,122,0.18)',
+                  background: 'rgba(5,3,9,0.5)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,217,122,0.12)';
+                  e.currentTarget.style.boxShadow = '0 0 30px rgba(255,217,122,0.5)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(5,3,9,0.5)';
+                  e.currentTarget.style.boxShadow = '0 0 20px rgba(255,217,122,0.18)';
+                }}>
+                  EXPLORER TOUTES LES ORBITES ({total}) →
+                </Link>
+              </div>
             )}
           </>
         )}
