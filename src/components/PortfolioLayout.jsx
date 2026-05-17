@@ -91,7 +91,7 @@ export default function PortfolioLayout() {
         backdropFilter: 'blur(8px)',
       }}>
         <span style={{ color: 'rgba(212,193,154,0.65)', fontSize: '0.6rem', letterSpacing: '0.25em' }}>
-          v{APP_VERSION_DISPLAY} <span style={{ color: '#ffd97a', animation: 'blink 1.5s ease-in-out infinite' }}>●</span>
+          {APP_VERSION_DISPLAY} <span style={{ color: '#ffd97a', animation: 'blink 1.5s ease-in-out infinite' }}>●</span>
         </span>
         <span style={{ color: 'rgba(245,239,224,0.25)', fontSize: '0.6rem', letterSpacing: '0.2em' }}>
           {activeId.toUpperCase()}

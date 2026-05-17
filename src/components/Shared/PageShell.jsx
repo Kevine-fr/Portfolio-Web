@@ -82,7 +82,7 @@ export default function PageShell({ children, label, sceneSection = 1 }) {
         flexWrap: 'wrap', gap: '1rem',
       }}>
         <span style={{ color: 'rgba(212,193,154,0.55)', fontSize: '0.6rem', letterSpacing: '0.25em' }}>
-          v{APP_VERSION_DISPLAY} <span style={{ color: '#ffd97a' }}>●</span>
+          {APP_VERSION_DISPLAY} <span style={{ color: '#ffd97a' }}>●</span>
         </span>
         <Link to="/" style={{
           color: 'rgba(245,239,224,0.55)', fontSize: '0.6rem',

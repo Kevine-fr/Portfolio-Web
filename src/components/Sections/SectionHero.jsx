@@ -126,7 +126,7 @@ export default function SectionHero({ onNavigate }) {
           transform: loaded ? 'translateX(0)' : 'translateX(-20px)',
           transition: 'all 0.8s ease 0.2s',
         }}>
-          &gt; PORTFOLIO_v{APP_VERSION_DISPLAY}
+          &gt; PORTFOLIO_{APP_VERSION_DISPLAY}
         </p>
 
         <h1
