@@ -149,7 +149,7 @@ export default function SectionProjects() {
           margin: '0 0 1rem', opacity: 0.9,
           textShadow: '0 0 12px rgba(255,217,122,0.5)',
         }}>
-          &gt; 03_PROJETS
+          &gt; 06_PROJETS
         </p>
         <h2 style={{
           margin: 0, fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 900, lineHeight: 1,

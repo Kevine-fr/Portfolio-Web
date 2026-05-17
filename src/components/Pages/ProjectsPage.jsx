@@ -186,7 +186,7 @@ export default function ProjectsPage() {
   const hasActiveFilters = statusFilter !== 'all' || techFilter || yearFilter;
 
   return (
-    <PageShell label="03_PROJETS">
+    <PageShell label="06_PROJETS" sceneSection={5}>
       <section style={{
         padding: 'clamp(2rem, 6vh, 4rem) clamp(1.5rem, 5vw, 3rem)',
         maxWidth: '1200px', margin: '0 auto',

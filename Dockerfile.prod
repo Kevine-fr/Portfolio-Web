@@ -3,15 +3,17 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# Build args passés par Jenkins (remplacés par Vite au build)
+# Build args (passes par la CI). Tous bakes dans le bundle par Vite.
 ARG VITE_API_URL=http://localhost:8000
 ARG VITE_SITE_URL=localhost
+ARG IMAGE_TAG=dev
 
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_SITE_URL=$VITE_SITE_URL
+ENV VITE_APP_VERSION=$IMAGE_TAG
 
 COPY package*.json ./
-RUN npm ci
+RUN if [ -f package-lock.json ]; then npm ci --legacy-peer-deps; else npm install --legacy-peer-deps; fi
 
 COPY . .
 RUN npm run build

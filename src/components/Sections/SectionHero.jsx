@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useFetch } from '../../hooks/useFetch';
 import { resolveMediaUrl } from '../../lib/api';
 import { FALLBACK_ABOUT } from '../../data/fallbacks';
+import { APP_VERSION_DISPLAY } from '../../lib/version';
 
 function useTyping(texts, speed = 80) {
   const [displayed, setDisplayed] = useState('');
@@ -125,7 +126,7 @@ export default function SectionHero({ onNavigate }) {
           transform: loaded ? 'translateX(0)' : 'translateX(-20px)',
           transition: 'all 0.8s ease 0.2s',
         }}>
-          &gt; PORTFOLIO_v2.1.0
+          &gt; PORTFOLIO_v{APP_VERSION_DISPLAY}
         </p>
 
         <h1

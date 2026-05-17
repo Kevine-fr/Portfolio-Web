@@ -8,6 +8,7 @@ import SectionEducation   from './Sections/SectionEducation';
 import SectionProjects    from './Sections/SectionProjects';
 import SectionContact     from './Sections/SectionContact';
 import GlobalNav          from './GlobalNav';
+import { APP_VERSION_DISPLAY } from '../lib/version';
 
 // SECTIONS drives nav + observer. Each section has its OWN astre in
 // PersistentScene — the camera Bezier-travels between all 7 astres.
@@ -90,7 +91,7 @@ export default function PortfolioLayout() {
         backdropFilter: 'blur(8px)',
       }}>
         <span style={{ color: 'rgba(212,193,154,0.65)', fontSize: '0.6rem', letterSpacing: '0.25em' }}>
-          v2.1.0 <span style={{ color: '#ffd97a', animation: 'blink 1.5s ease-in-out infinite' }}>●</span>
+          v{APP_VERSION_DISPLAY} <span style={{ color: '#ffd97a', animation: 'blink 1.5s ease-in-out infinite' }}>●</span>
         </span>
         <span style={{ color: 'rgba(245,239,224,0.25)', fontSize: '0.6rem', letterSpacing: '0.2em' }}>
           {activeId.toUpperCase()}

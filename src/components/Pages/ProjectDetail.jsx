@@ -100,11 +100,11 @@ export default function ProjectDetail() {
   const [lightboxIdx, setLightboxIdx] = useState(null);
 
   if (loading && !data) {
-    return <PageShell label="03_PROJETS"><Loader /></PageShell>;
+    return <PageShell label="06_PROJETS" sceneSection={5}><Loader /></PageShell>;
   }
   if (!project) {
     return (
-      <PageShell label="03_PROJETS">
+      <PageShell label="06_PROJETS" sceneSection={5}>
         <div style={{
           padding: '6rem 1.5rem', textAlign: 'center',
           maxWidth: '600px', margin: '0 auto',
@@ -142,7 +142,7 @@ export default function ProjectDetail() {
   const nextLightbox = () => setLightboxIdx(i => (i + 1) % gallery.length);
 
   return (
-    <PageShell label={project.title.toUpperCase()}>
+    <PageShell label={project.title.toUpperCase()} sceneSection={5}>
       <article style={{
         maxWidth: '1100px', margin: '0 auto',
         padding: 'clamp(2rem, 6vh, 4rem) clamp(1.5rem, 5vw, 3rem) 4rem',

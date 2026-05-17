@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import PersistentScene from '../Scene3D/PersistentScene';
+import { APP_VERSION_DISPLAY } from '../../lib/version';
 
 /**
  * Wrapper used by all non-home pages.
@@ -81,13 +82,13 @@ export default function PageShell({ children, label, sceneSection = 1 }) {
         flexWrap: 'wrap', gap: '1rem',
       }}>
         <span style={{ color: 'rgba(212,193,154,0.55)', fontSize: '0.6rem', letterSpacing: '0.25em' }}>
-          v2.1.0 <span style={{ color: '#ffd97a' }}>●</span>
+          v{APP_VERSION_DISPLAY} <span style={{ color: '#ffd97a' }}>●</span>
         </span>
         <Link to="/" style={{
           color: 'rgba(245,239,224,0.55)', fontSize: '0.6rem',
           letterSpacing: '0.25em', textDecoration: 'none',
         }}>
-          RETOUR_ACCUEIL ↺
+          ACCUEIL ↺
         </Link>
       </footer>
 

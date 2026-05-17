@@ -44,12 +44,9 @@ export default function GlobalNav({ sections, activeId, onNavigate }) {
           PORTFOLIO
         </span>
 
-        {/* Desktop nav — anchor sections + extra route links */}
-        <div className="nav-desktop" style={{ display: 'flex', gap: '1.6rem', alignItems: 'center' }}>
-          {sections
-            .slice(1)
-            .filter(s => s.id !== 'experience' && s.id !== 'education')
-            .map(s => {
+        {/* Desktop nav — all section anchors + extra route links */}
+        <div className="nav-desktop" style={{ display: 'flex', gap: '1.4rem', alignItems: 'center' }}>
+          {sections.slice(1).map(s => {
             const active = s.id === activeId;
             return (
               <span
@@ -58,8 +55,8 @@ export default function GlobalNav({ sections, activeId, onNavigate }) {
                 onClick={() => onNavigate(s.id)}
                 style={{
                   color: active ? '#ffd97a' : 'rgba(245,239,224,0.55)',
-                  fontSize: '0.7rem',
-                  letterSpacing: '0.18em',
+                  fontSize: '0.68rem',
+                  letterSpacing: '0.16em',
                   cursor: 'pointer',
                   transition: 'color 0.3s',
                   position: 'relative',
@@ -88,8 +85,8 @@ export default function GlobalNav({ sections, activeId, onNavigate }) {
               className="hero-nav-item"
               style={{
                 color: 'rgba(212,193,154,0.7)',
-                fontSize: '0.65rem',
-                letterSpacing: '0.18em',
+                fontSize: '0.63rem',
+                letterSpacing: '0.16em',
                 textDecoration: 'none',
                 transition: 'color 0.3s',
               }}>

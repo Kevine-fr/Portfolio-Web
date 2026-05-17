@@ -63,7 +63,7 @@ export default function NotFound() {
             fontWeight: 700,
             boxShadow: '0 0 25px rgba(212,193,154,0.4)',
           }}>
-            ← RETOUR_ACCUEIL
+            ← ACCUEIL
           </Link>
           <Link to="/projets" style={{
             padding: '0.8rem 1.8rem',

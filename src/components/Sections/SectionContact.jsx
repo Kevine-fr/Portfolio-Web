@@ -62,7 +62,7 @@ export default function SectionContact() {
           margin: '0 0 1rem', opacity: 0.95,
           textShadow: '0 0 14px rgba(170,204,255,0.7)',
         }}>
-          &gt; 04_CONTACT
+          &gt; 07_CONTACT
         </p>
         <h2 style={{
           margin: 0, fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 900, lineHeight: 1,
