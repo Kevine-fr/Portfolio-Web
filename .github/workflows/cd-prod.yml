@@ -51,7 +51,7 @@ jobs:
 
           echo "→ Génération du .env..."
           cat > .env << 'ENVEOF'
-          
+          IMAGE_TAG=${LAST_TAG}
           ENVEOF
           chmod 600 .env
 
