@@ -124,8 +124,6 @@ function makeStarfield(starTex, tier) {
 }
 
 // ─── Champ d'etoiles LOCAL avec recyclage infini ────────────────────────────
-// Renvoie { points, recycle(t) } : recycle decale les etoiles qui sortent du
-// champ visible pour en faire apparaitre constamment de nouvelles.
 function makeLocalStarfield(starTex, tier, center) {
   const N = tier === 'low' ? 1500 : tier === 'medium' ? 3000 : 5000;
   const pos = new Float32Array(N * 3);
@@ -134,8 +132,6 @@ function makeLocalStarfield(starTex, tier, center) {
     [1.0, 0.97, 0.88], [0.95, 0.92, 0.82],
     [1.0, 0.88, 0.65], [0.85, 0.92, 1.0],
   ];
-  // Tracker par etoile : son angle initial + age (pour drift radial subtil)
-  // On stocke pour pouvoir recycler quand l'etoile s'eloigne trop
   const baseAngle = new Float32Array(N);
   const baseRadius = new Float32Array(N);
   const baseY = new Float32Array(N);
@@ -211,12 +207,17 @@ const CONSTELLATIONS = [
 const magToSize = (mag) => Math.max(0.06, 0.18 - mag * 0.025);
 const magToOpacity = (mag) => Math.max(0.55, 1.0 - mag * 0.08);
 
+// ─── POSITIONS DES 7 ASTRES ─────────────────────────────────────────────────
+// Constellation cosmique etiree, avec assez d'espacement pour que les
+// champs d'etoiles locaux de chaque astre ne se chevauchent pas (R_MAX ≈ 38).
 const ASTRE_POSITIONS = [
-  new THREE.Vector3(   0,   0,    0),
-  new THREE.Vector3( -45,   6,  -35),
-  new THREE.Vector3(  55,  -8,  -70),
-  new THREE.Vector3( -35,  22,  -95),
-  new THREE.Vector3(  65,   0, -130),
+  new THREE.Vector3(   0,    0,    0),   // 0 Hero
+  new THREE.Vector3( -45,    6,  -35),   // 1 About (Saturne)
+  new THREE.Vector3(  55,   -8,  -70),   // 2 Skills (Constellations)
+  new THREE.Vector3(  10,   18, -110),   // 3 Experience (Danse orbitale) — NEW
+  new THREE.Vector3( -55,   -4, -150),   // 4 Education (Systeme solaire) — NEW
+  new THREE.Vector3(  30,   25, -195),   // 5 Projects (was at idx 3)
+  new THREE.Vector3(  70,    0, -240),   // 6 Contact (was at idx 4)
 ];
 
 function buildCurvePoints() {
@@ -289,7 +290,6 @@ export default function PersistentScene({ activeSectionRef }) {
     const starfield = makeStarfield(starTex, tier);
     scene.add(starfield);
 
-    // ── ETOILES LOCALES avec recyclage infini par astre ─────────────────────
     const localStarfields = ASTRE_POSITIONS.map((pos) => {
       const sf = makeLocalStarfield(starTex, tier, pos);
       scene.add(sf.points);
@@ -311,6 +311,8 @@ export default function PersistentScene({ activeSectionRef }) {
     const haloTexGold  = makeHaloTexture('rgba(255,217,122,0.7)', 'rgba(212,193,154,0.4)');
     const haloTexWhite = makeHaloTexture('rgba(255,255,255,1)',   'rgba(170,210,255,0.6)');
 
+    const heroSphereSegs = tier === 'low' ? 32 : tier === 'medium' ? 64 : 96;
+
     // ═════════════════════════════════════════════════════════════════════════
     // ── ASTRE 0 : HERO ───────────────────────────────────────────────────────
     // ═════════════════════════════════════════════════════════════════════════
@@ -318,7 +320,6 @@ export default function PersistentScene({ activeSectionRef }) {
     heroGroup.position.copy(ASTRE_POSITIONS[0]);
     scene.add(heroGroup);
 
-    const heroSphereSegs = tier === 'low' ? 32 : tier === 'medium' ? 64 : 96;
     const heroSphere = new THREE.Mesh(
       new THREE.SphereGeometry(1.8, heroSphereSegs, heroSphereSegs),
       new THREE.MeshStandardMaterial({
@@ -352,7 +353,7 @@ export default function PersistentScene({ activeSectionRef }) {
     });
 
     // ═════════════════════════════════════════════════════════════════════════
-    // ── ASTRE 1 : ABOUT ──────────────────────────────────────────────────────
+    // ── ASTRE 1 : ABOUT (Saturne) ────────────────────────────────────────────
     // ═════════════════════════════════════════════════════════════════════════
     const aboutGroup = new THREE.Group();
     aboutGroup.position.copy(ASTRE_POSITIONS[1]);
@@ -391,7 +392,7 @@ export default function PersistentScene({ activeSectionRef }) {
     });
 
     // ═════════════════════════════════════════════════════════════════════════
-    // ── ASTRE 2 : SKILLS ─────────────────────────────────────────────────────
+    // ── ASTRE 2 : SKILLS (Constellations) ────────────────────────────────────
     // ═════════════════════════════════════════════════════════════════════════
     const skillsGroup = new THREE.Group();
     skillsGroup.position.copy(ASTRE_POSITIONS[2]);
@@ -480,10 +481,200 @@ export default function PersistentScene({ activeSectionRef }) {
     }
 
     // ═════════════════════════════════════════════════════════════════════════
-    // ── ASTRE 3 : PROJECTS ───────────────────────────────────────────────────
+    // ── ASTRE 3 : EXPERIENCE (Danse orbitale) ────────────────────────────────
+    // 3 planetes : 2 en couple binaire, 1 satellite exterieur sur plan incline
+    // ═════════════════════════════════════════════════════════════════════════
+    const experienceGroup = new THREE.Group();
+    experienceGroup.position.copy(ASTRE_POSITIONS[3]);
+    scene.add(experienceGroup);
+
+    // Halo discret en arriere-plan du systeme
+    const expHalo = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: haloTexGold, transparent: true, depthWrite: false,
+      blending: THREE.AdditiveBlending, opacity: 0.18,
+    }));
+    expHalo.scale.set(7, 7, 1);
+    expHalo.position.set(0, 0, -2);
+    experienceGroup.add(expHalo);
+
+    // Planete A — or pale
+    const expPlanetA = new THREE.Mesh(
+      new THREE.SphereGeometry(0.42, 48, 48),
+      new THREE.MeshStandardMaterial({
+        color: 0xd4c19a, metalness: 0.55, roughness: 0.35,
+        envMap, envMapIntensity: 1.6,
+      })
+    );
+    experienceGroup.add(expPlanetA);
+
+    // Planete B — bronze plus sombre
+    const expPlanetB = new THREE.Mesh(
+      new THREE.SphereGeometry(0.34, 48, 48),
+      new THREE.MeshStandardMaterial({
+        color: 0x8a6f3f, metalness: 0.7, roughness: 0.3,
+        envMap, envMapIntensity: 1.4,
+      })
+    );
+    experienceGroup.add(expPlanetB);
+
+    // Planete C — geante avec anneau
+    const expPlanetC = new THREE.Mesh(
+      new THREE.SphereGeometry(0.7, 56, 56),
+      new THREE.MeshStandardMaterial({
+        color: 0xc89868, metalness: 0.5, roughness: 0.55,
+        envMap, envMapIntensity: 1.5,
+      })
+    );
+    experienceGroup.add(expPlanetC);
+
+    // Anneau equatorial sur la geante
+    const expGiantRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.95, 1.25, 96),
+      new THREE.MeshBasicMaterial({
+        color: COLORS.goldPale, transparent: true, opacity: 0.5,
+        side: THREE.DoubleSide, depthWrite: false,
+      })
+    );
+    expGiantRing.rotation.x = Math.PI / 2.4;
+    expPlanetC.add(expGiantRing);
+
+    // Trails orbitaux fins
+    const EXP_BIN_RADIUS = 1.35;
+    const EXP_OUT_RADIUS = 4.2;
+    const expBinaryTrail = new THREE.Mesh(
+      new THREE.RingGeometry(EXP_BIN_RADIUS - 0.008, EXP_BIN_RADIUS + 0.008, 192),
+      new THREE.MeshBasicMaterial({
+        color: COLORS.goldGlow, transparent: true, opacity: 0.12,
+        side: THREE.DoubleSide, depthWrite: false,
+      })
+    );
+    expBinaryTrail.rotation.x = Math.PI / 2;
+    experienceGroup.add(expBinaryTrail);
+
+    // Plan d'orbite outer incline via un pivot
+    const expOuterPivot = new THREE.Object3D();
+    expOuterPivot.rotation.z = 0.35;
+    expOuterPivot.rotation.x = 0.1;
+    experienceGroup.add(expOuterPivot);
+
+    const expOuterTrail = new THREE.Mesh(
+      new THREE.RingGeometry(EXP_OUT_RADIUS - 0.008, EXP_OUT_RADIUS + 0.008, 192),
+      new THREE.MeshBasicMaterial({
+        color: COLORS.goldPale, transparent: true, opacity: 0.08,
+        side: THREE.DoubleSide, depthWrite: false,
+      })
+    );
+    expOuterTrail.rotation.x = Math.PI / 2;
+    expOuterPivot.add(expOuterTrail);
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // ── ASTRE 4 : EDUCATION (Systeme solaire) ────────────────────────────────
+    // Etoile centrale + 4 planetes sur orbites inclinees, dont 1 a anneaux
+    // ═════════════════════════════════════════════════════════════════════════
+    const educationGroup = new THREE.Group();
+    educationGroup.position.copy(ASTRE_POSITIONS[4]);
+    educationGroup.scale.setScalar(0.7); // Compact le systeme dans le cadrage camera
+    scene.add(educationGroup);
+
+    // Soleil central — auto-emissif (MeshBasic ignore les lumieres)
+    const eduSun = new THREE.Mesh(
+      new THREE.SphereGeometry(0.55, 56, 56),
+      new THREE.MeshBasicMaterial({ color: 0xffd97a })
+    );
+    educationGroup.add(eduSun);
+
+    // Halo lumineux du soleil
+    const eduSunHalo = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: haloTexGold, transparent: true, depthWrite: false,
+      blending: THREE.AdditiveBlending, opacity: 0.7,
+      color: 0xffd97a,
+    }));
+    eduSunHalo.scale.set(2.8, 2.8, 1);
+    educationGroup.add(eduSunHalo);
+
+    const eduSunHaloOuter = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: haloTexGold, transparent: true, depthWrite: false,
+      blending: THREE.AdditiveBlending, opacity: 0.3,
+      color: 0xd4c19a,
+    }));
+    eduSunHaloOuter.scale.set(6, 6, 1);
+    educationGroup.add(eduSunHaloOuter);
+
+    // Lumiere locale rayonnant depuis le soleil pour eclairer ses planetes
+    const eduSunLight = new THREE.PointLight(0xfff4d6, 2.0, 12, 1.6);
+    educationGroup.add(eduSunLight);
+
+    // 4 planetes sur orbites inclinees
+    const EDU_PLANETS = [
+      { radius: 1.5, size: 0.16, color: 0xc99060, speed: 0.55, selfSpin: 1.8, tilt:  0.06, nodeAngle:  0.0 },
+      { radius: 2.6, size: 0.24, color: 0x4a78bc, speed: 0.36, selfSpin: 1.3, tilt: -0.08, nodeAngle:  0.4 },
+      { radius: 4.2, size: 0.36, color: 0xd4a06a, speed: 0.22, selfSpin: 0.9, tilt:  0.15, nodeAngle: -0.3, hasRings: true },
+      { radius: 5.8, size: 0.20, color: 0x8a6fb8, speed: 0.12, selfSpin: 0.7, tilt:  0.18, nodeAngle:  0.7 },
+    ];
+
+    const eduPlanetSystems = EDU_PLANETS.map(p => {
+      const pivot = new THREE.Object3D();
+      pivot.rotation.x = p.tilt;
+      pivot.rotation.z = p.nodeAngle * 0.3;
+
+      const mesh = new THREE.Mesh(
+        new THREE.SphereGeometry(p.size, 36, 36),
+        new THREE.MeshStandardMaterial({
+          color: p.color, emissive: 0x0a0805,
+          roughness: 0.8, metalness: 0.1,
+          envMap, envMapIntensity: 0.7,
+        })
+      );
+      mesh.position.x = p.radius;
+
+      // Conteneur pour la rotation orbitale (decouple du tilt du plan)
+      const orbitContainer = new THREE.Object3D();
+      orbitContainer.rotation.y = Math.random() * Math.PI * 2;
+      orbitContainer.add(mesh);
+      pivot.add(orbitContainer);
+
+      // Anneau orbital fin (trace de la trajectoire)
+      const orbitRing = new THREE.Mesh(
+        new THREE.RingGeometry(p.radius - 0.008, p.radius + 0.008, 192),
+        new THREE.MeshBasicMaterial({
+          color: COLORS.goldPale, transparent: true, opacity: 0.10,
+          side: THREE.DoubleSide, depthWrite: false,
+        })
+      );
+      orbitRing.rotation.x = Math.PI / 2;
+      pivot.add(orbitRing);
+
+      if (p.hasRings) {
+        const planetRing = new THREE.Mesh(
+          new THREE.RingGeometry(p.size * 1.5, p.size * 2.3, 64),
+          new THREE.MeshBasicMaterial({
+            color: 0xc8a878, transparent: true, opacity: 0.55,
+            side: THREE.DoubleSide, depthWrite: false,
+          })
+        );
+        planetRing.rotation.x = Math.PI / 2.3;
+        mesh.add(planetRing);
+
+        const planetRingOuter = new THREE.Mesh(
+          new THREE.RingGeometry(p.size * 2.4, p.size * 2.7, 64),
+          new THREE.MeshBasicMaterial({
+            color: 0xa88858, transparent: true, opacity: 0.3,
+            side: THREE.DoubleSide, depthWrite: false,
+          })
+        );
+        planetRingOuter.rotation.x = Math.PI / 2.3;
+        mesh.add(planetRingOuter);
+      }
+
+      educationGroup.add(pivot);
+      return { ...p, pivot, orbitContainer, mesh };
+    });
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // ── ASTRE 5 : PROJECTS ───────────────────────────────────────────────────
     // ═════════════════════════════════════════════════════════════════════════
     const projectsGroup = new THREE.Group();
-    projectsGroup.position.copy(ASTRE_POSITIONS[3]);
+    projectsGroup.position.copy(ASTRE_POSITIONS[5]);
     projectsGroup.scale.setScalar(0.65);
     scene.add(projectsGroup);
 
@@ -530,29 +721,21 @@ export default function PersistentScene({ activeSectionRef }) {
     });
 
     // ═════════════════════════════════════════════════════════════════════════
-    // ── ASTRE 4 : CONTACT ────────────────────────────────────────────────────
+    // ── ASTRE 6 : CONTACT (Naine blanche) ────────────────────────────────────
     // ═════════════════════════════════════════════════════════════════════════
     const contactGroup = new THREE.Group();
-    contactGroup.position.copy(ASTRE_POSITIONS[4]);
+    contactGroup.position.copy(ASTRE_POSITIONS[6]);
     const dwarfOffset = new THREE.Vector3(3, 0, 0);
     scene.add(contactGroup);
 
     const dwarfStar = new THREE.Mesh(
       new THREE.SphereGeometry(1.8, heroSphereSegs, heroSphereSegs),
-      // MeshBasicMaterial : ignore tout l'eclairage de la scene
-      // -> la naine emet sa propre lumiere pure, quel que soit le voyage camera
-      // Couleur blanc tres legerement teinte bleu (~10 000 K, image de reference)
-      new THREE.MeshBasicMaterial({
-        color: 0xf0f8ff,    // blanc avec touche bleue glaciale
-      })
+      new THREE.MeshBasicMaterial({ color: 0xf0f8ff })
     );
     dwarfStar.scale.setScalar(0.55);
     dwarfStar.position.copy(dwarfOffset);
     contactGroup.add(dwarfStar);
 
-    // ── LUMIERE PROPRE de la naine blanche ────────────────────────────────────
-    // Cree un eclairage local bleu-blanc qui rayonne depuis la naine
-    // pour eclairer ses propres arcs magnetiques (et le halo cote BG)
     const dwarfLight = new THREE.PointLight(0xaaccff, 3.0, 25);
     dwarfLight.position.copy(dwarfOffset);
     contactGroup.add(dwarfLight);
@@ -560,7 +743,7 @@ export default function PersistentScene({ activeSectionRef }) {
     const dwarfHalo = new THREE.Sprite(new THREE.SpriteMaterial({
       map: haloTexWhite, transparent: true, depthWrite: false,
       blending: THREE.AdditiveBlending, opacity: 1.0,
-      color: 0x88bfff,   // bleu glacial sature (etait par defaut blanc)
+      color: 0x88bfff,
     }));
     dwarfHalo.scale.set(9, 9, 1);
     dwarfHalo.position.set(dwarfOffset.x, dwarfOffset.y, dwarfOffset.z - 0.5);
@@ -569,7 +752,7 @@ export default function PersistentScene({ activeSectionRef }) {
     const dwarfGlow = new THREE.Sprite(new THREE.SpriteMaterial({
       map: haloTexWhite, transparent: true, depthWrite: false,
       blending: THREE.AdditiveBlending, opacity: 0.9,
-      color: 0xc8e0ff,   // glow plus proche, blanc avec touche bleue
+      color: 0xc8e0ff,
     }));
     dwarfGlow.scale.set(4, 4, 1);
     dwarfGlow.position.copy(dwarfOffset);
@@ -634,6 +817,7 @@ export default function PersistentScene({ activeSectionRef }) {
 
     const vTmp = new THREE.Vector3();
     const vLook = new THREE.Vector3();
+    const vOrbitLocal = new THREE.Vector3();
 
     function quadBezier(p0, p1, p2, t, out) {
       const u = 1 - t;
@@ -667,7 +851,7 @@ export default function PersistentScene({ activeSectionRef }) {
 
       const p = easeInOutCubic(state.morphProgress);
 
-      // ── VOYAGE camera (Bezier quadratique) ───────────────────────────────────
+      // Voyage camera (Bezier quadratique)
       quadBezier(state.cameraTravelFrom, state.cameraTravelCtrl, state.cameraTravelTo, p, vTmp);
       vTmp.z += 7;
       vTmp.x += state.mx * 0.6;
@@ -680,7 +864,7 @@ export default function PersistentScene({ activeSectionRef }) {
       vLook.copy(lookTarget);
       camera.lookAt(vLook);
 
-      // ── LUMIERES ─────────────────────────────────────────────────────────────
+      // Lumieres globales suivent l'astre courant
       const lookAstre = state.morphProgress < 1
         ? state.cameraTravelTo
         : ASTRE_POSITIONS[state.targetMorph];
@@ -696,11 +880,9 @@ export default function PersistentScene({ activeSectionRef }) {
       );
       rimLight.position.set(lookAstre.x, lookAstre.y, lookAstre.z - 3);
 
-      // ═══════════════════════════════════════════════════════════════════════
-      // ── ANIMATIONS DES ASTRES ───────────────────────────────────────────────
-      // ═══════════════════════════════════════════════════════════════════════
+      // ─── ANIMATIONS DES ASTRES ──────────────────────────────────────────────
 
-      // HERO
+      // ── HERO (0)
       heroSphere.rotation.y = t * 0.18;
       heroSphere.rotation.x = Math.sin(t * 0.3) * 0.15;
       heroSphere.scale.setScalar(1 + Math.sin(t * 1.2) * 0.015);
@@ -711,7 +893,7 @@ export default function PersistentScene({ activeSectionRef }) {
         ring.rotation.y += 0.0006;
       });
 
-      // ABOUT
+      // ── ABOUT (1)
       aboutPlanet.rotation.y = t * 0.15;
       aboutPlanet.rotation.x = Math.sin(t * 0.3) * 0.1;
       aboutPlanet.scale.setScalar(1.1 * (1 + Math.sin(t * 1.0) * 0.01));
@@ -722,7 +904,7 @@ export default function PersistentScene({ activeSectionRef }) {
         ring.rotation.y += 0.0008;
       });
 
-      // SKILLS
+      // ── SKILLS (2)
       skillsCore.rotation.y = t * 0.18;
       skillsCore.scale.setScalar(1 + Math.sin(t * 1.2) * 0.02);
       constStars.forEach((star) => {
@@ -751,7 +933,39 @@ export default function PersistentScene({ activeSectionRef }) {
       skillsGroup.rotation.y = Math.sin(t * 0.05) * 0.06;
       skillsGroup.rotation.x = Math.cos(t * 0.04) * 0.03;
 
-      // PROJECTS
+      // ── EXPERIENCE (3) — Danse orbitale
+      const binPhase = t * 0.55;
+      expPlanetA.position.set( Math.cos(binPhase) * EXP_BIN_RADIUS, 0,  Math.sin(binPhase) * EXP_BIN_RADIUS);
+      expPlanetB.position.set(-Math.cos(binPhase) * EXP_BIN_RADIUS, 0, -Math.sin(binPhase) * EXP_BIN_RADIUS);
+      expPlanetA.rotation.y = t * 1.4;
+      expPlanetB.rotation.y = t * 1.2;
+
+      // Planete C : position sur l'orbite outer puis transformee par le pivot incline
+      const outPhase = t * 0.18 + 1.7;
+      vOrbitLocal.set(
+        Math.cos(outPhase) * EXP_OUT_RADIUS,
+        0,
+        Math.sin(outPhase) * EXP_OUT_RADIUS,
+      );
+      vOrbitLocal.applyEuler(expOuterPivot.rotation);
+      expPlanetC.position.copy(vOrbitLocal);
+      expPlanetC.rotation.y = t * 0.6;
+
+      expHalo.material.opacity = 0.15 + Math.sin(t * 0.7) * 0.05;
+      experienceGroup.rotation.y = Math.sin(t * 0.03) * 0.04;
+
+      // ── EDUCATION (4) — Systeme solaire
+      const sunPulse = 1 + Math.sin(t * 0.8) * 0.04;
+      eduSun.scale.setScalar(sunPulse);
+      eduSunHalo.scale.set(2.8 * sunPulse, 2.8 * sunPulse, 1);
+      eduSunHaloOuter.material.opacity = 0.25 + Math.sin(t * 0.5) * 0.05;
+      eduPlanetSystems.forEach((planet) => {
+        planet.orbitContainer.rotation.y += dt * planet.speed;
+        planet.mesh.rotation.y          += dt * planet.selfSpin;
+      });
+      educationGroup.rotation.y = Math.sin(t * 0.025) * 0.05;
+
+      // ── PROJECTS (5)
       projKnot.rotation.x  = t * 0.28;
       projKnot.rotation.y  = t * 0.38;
       projSphere.position.x = Math.cos(t * 0.6) * 3.2;
@@ -768,7 +982,7 @@ export default function PersistentScene({ activeSectionRef }) {
         ring.rotation.y += 0.001;
       });
 
-      // CONTACT
+      // ── CONTACT (6)
       const dwarfPulse = 0.7 + Math.sin(t * 4.0) * 0.25 + Math.sin(t * 7.3) * 0.1;
       dwarfHalo.material.opacity = dwarfPulse;
       dwarfHalo.scale.setScalar(9 + Math.sin(t * 4.0) * 0.6);
@@ -783,32 +997,23 @@ export default function PersistentScene({ activeSectionRef }) {
         arc.mesh.material.opacity = arc.baseOpacity * flicker;
       });
 
-      // ── ROTATION + RECYCLAGE INFINI DES CHAMPS D'ETOILES ────────────────────
-      // Le fond galactique tourne juste tres lentement (decor)
+      // ── Rotation + recyclage infini des champs d'etoiles ───────────────────
       starfield.rotation.y = t * 0.005;
 
-      // Pour les locales : meme rotation Y MAIS chaque etoile derive en angle
-      // ce qui simule un flux continu. Quand son rayon devient trop grand
-      // (sortie du champ visible), on la recycle a un nouveau rayon proche.
-      // Vitesse angulaire equivalente a la rotation = 0.005 rad/s
       const ANGULAR_SPEED = 0.005;
-      // Drift radial leger : les etoiles s'eloignent progressivement
-      // puis se font recycler. Vitesse "voyage" subtile.
-      const RADIAL_DRIFT = 0.06 * dt;   // unites/s
+      const RADIAL_DRIFT = 0.06 * dt;
       const R_MIN = 8;
-      const R_MAX = 38;   // 8 + 30 = limite naturelle de generation
+      const R_MAX = 38;
 
       localStarfields.forEach((sf) => {
         const arr = sf.points.geometry.attributes.position.array;
         const c = sf.center;
         for (let i = 0; i < sf.N; i++) {
-          // Avance l'angle (= rotation Y) ET le rayon (= drift)
           sf.baseAngle[i]  += ANGULAR_SPEED * dt;
           sf.baseRadius[i] += RADIAL_DRIFT;
-          // Recyclage si etoile trop loin
           if (sf.baseRadius[i] > R_MAX) {
             sf.baseAngle[i]  = Math.random() * Math.PI * 2;
-            sf.baseRadius[i] = R_MIN + Math.random() * 2;   // respawn proche
+            sf.baseRadius[i] = R_MIN + Math.random() * 2;
             sf.baseY[i]      = (Math.random() - 0.5) * 25;
           }
           const r = sf.baseRadius[i];
@@ -843,18 +1048,52 @@ export default function PersistentScene({ activeSectionRef }) {
         sf.points.geometry.dispose();
         sf.points.material.dispose();
       });
+
+      // Hero
       heroSphere.geometry.dispose(); heroSphere.material.dispose();
       heroRings.forEach(r => { r.geometry.dispose(); r.material.dispose(); });
+
+      // About
       aboutPlanet.geometry.dispose(); aboutPlanet.material.dispose();
       aboutRings.forEach(r => { r.geometry.dispose(); r.material.dispose(); });
+
+      // Skills
       skillsCore.geometry.dispose(); skillsCore.material.dispose();
       constStars.forEach(s => { s.mesh.material.dispose(); });
       constLines.forEach(l => { l.mesh.geometry.dispose(); l.mesh.material.dispose(); });
       decoStars.forEach(s => { s.mesh.material.dispose(); });
+
+      // Experience
+      expPlanetA.geometry.dispose(); expPlanetA.material.dispose();
+      expPlanetB.geometry.dispose(); expPlanetB.material.dispose();
+      expPlanetC.geometry.dispose(); expPlanetC.material.dispose();
+      expGiantRing.geometry.dispose(); expGiantRing.material.dispose();
+      expBinaryTrail.geometry.dispose(); expBinaryTrail.material.dispose();
+      expOuterTrail.geometry.dispose(); expOuterTrail.material.dispose();
+
+      // Education
+      eduSun.geometry.dispose(); eduSun.material.dispose();
+      eduPlanetSystems.forEach(p => {
+        p.mesh.geometry.dispose(); p.mesh.material.dispose();
+        p.mesh.children.forEach(c => {
+          if (c.geometry) c.geometry.dispose();
+          if (c.material) c.material.dispose();
+        });
+        p.pivot.children.forEach(c => {
+          if (c instanceof THREE.Mesh) {
+            c.geometry.dispose();
+            c.material.dispose();
+          }
+        });
+      });
+
+      // Projects
       projKnot.geometry.dispose();   projKnot.material.dispose();
       projSphere.geometry.dispose(); projSphere.material.dispose();
       projDodec.geometry.dispose();  projDodec.material.dispose();
       projRings.forEach(r => { r.geometry.dispose(); r.material.dispose(); });
+
+      // Contact
       dwarfStar.geometry.dispose(); dwarfStar.material.dispose();
       dwarfArcs.forEach(a => { a.mesh.geometry.dispose(); a.mesh.material.dispose(); });
     };

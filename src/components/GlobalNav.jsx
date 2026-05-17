@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const EXTRA_LINKS = [
-  { to: '/projets',  label: 'PROJETS_PAGE' },
-  { to: '/parcours', label: 'PARCOURS' },
+  { to: '/projets',     label: 'PROJETS' },
+  { to: '/experiences', label: 'EXPERIENCES' },
+  { to: '/parcours',    label: 'FORMATION' },
 ];
 
 export default function GlobalNav({ sections, activeId, onNavigate }) {
@@ -44,8 +45,11 @@ export default function GlobalNav({ sections, activeId, onNavigate }) {
         </span>
 
         {/* Desktop nav — anchor sections + extra route links */}
-        <div className="nav-desktop" style={{ display: 'flex', gap: '1.8rem', alignItems: 'center' }}>
-          {sections.slice(1).map(s => {
+        <div className="nav-desktop" style={{ display: 'flex', gap: '1.6rem', alignItems: 'center' }}>
+          {sections
+            .slice(1)
+            .filter(s => s.id !== 'experience' && s.id !== 'education')
+            .map(s => {
             const active = s.id === activeId;
             return (
               <span

@@ -4,17 +4,18 @@ import PersistentScene from '../Scene3D/PersistentScene';
 
 /**
  * Wrapper used by all non-home pages.
- * Embeds the same PersistentScene as the home page but with the camera
- * frozen on a chosen section (default = 1 = Saturne).
+ * Embeds the same PersistentScene as the home page with the camera frozen
+ * on a chosen astre (default = 1 = About/Saturne).
  *
  * @param {object} props
  * @param {React.ReactNode} props.children
  * @param {string} [props.label]        - small label shown in topbar (e.g. "03_PROJETS")
- * @param {number} [props.sceneSection] - 0=Hero, 1=About/Saturne, 2=Skills, 3=Projects, 4=Contact
+ * @param {number} [props.sceneSection] - 0=Hero, 1=About, 2=Skills, 3=Experience,
+ *                                        4=Education, 5=Projects, 6=Contact
  */
 export default function PageShell({ children, label, sceneSection = 1 }) {
-  // A constant ref → the scene sees `activeSectionRef.current === sceneSection`
-  // on every frame and never animates between positions.
+  // Constant ref → PersistentScene's animate() always reads the same index
+  // and never triggers a Bezier camera travel.
   const frozenRef = useRef(sceneSection);
 
   return (
@@ -26,10 +27,9 @@ export default function PageShell({ children, label, sceneSection = 1 }) {
       position: 'relative',
       overflowX: 'hidden',
     }}>
-      {/* 3D scene as background — fixed position, low z-index */}
       <PersistentScene activeSectionRef={frozenRef} />
 
-      {/* Soft veil to make the content always readable on top of the 3D scene */}
+      {/* Soft veil for content readability */}
       <div aria-hidden="true" style={{
         position: 'fixed', inset: 0, zIndex: 2,
         pointerEvents: 'none',

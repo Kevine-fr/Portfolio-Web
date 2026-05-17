@@ -39,8 +39,54 @@ export const FALLBACK_SKILLS = [
   { _id: 'fb-s8', name: 'Git',         category: 'tools',    level: 90, visible: true },
 ];
 
-export const FALLBACK_EXPERIENCES = [];
-export const FALLBACK_EDUCATION   = [];
+export const FALLBACK_EXPERIENCES = [
+  {
+    _id: 'fb-x1',
+    title: 'Developpeur Full-Stack Freelance',
+    company: 'Independant',
+    location: 'France',
+    startDate: '2024-01-01',
+    current: true,
+    description: 'Conception et developpement d\'applications web sur mesure (React, NestJS, MongoDB) pour startups et PME.',
+    achievements: [],
+    techStack: ['React', 'NestJS', 'TypeScript', 'Docker'],
+  },
+  {
+    _id: 'fb-x2',
+    title: 'Stage Developpeur Web',
+    company: 'Studio Digital',
+    location: 'Lyon',
+    startDate: '2023-04-01',
+    endDate: '2023-09-30',
+    current: false,
+    description: 'Integration de maquettes complexes et developpement de composants reutilisables.',
+    achievements: [],
+    techStack: ['Vue.js', 'Tailwind', 'PHP', 'MySQL'],
+  },
+];
+
+export const FALLBACK_EDUCATION = [
+  {
+    _id: 'fb-e1',
+    school: 'École Supérieure',
+    degree: 'Master',
+    field: 'Architecture Logicielle',
+    location: 'France',
+    startDate: '2023-09-01',
+    endDate: '2025-06-30',
+    description: 'Specialisation en architecture micro-services, cloud-native et DevOps.',
+  },
+  {
+    _id: 'fb-e2',
+    school: 'Université',
+    degree: 'Licence',
+    field: 'Informatique',
+    location: 'France',
+    startDate: '2020-09-01',
+    endDate: '2023-06-30',
+    description: 'Algorithmique, structures de donnees, developpement web fullstack.',
+  },
+];
 
 export const FALLBACK_ABOUT = {
   // Hero

@@ -1,36 +1,43 @@
 import { useEffect, useRef, useState } from 'react';
-import PersistentScene from './Scene3D/PersistentScene';
-import SectionHero     from './Sections/SectionHero';
-import SectionAbout    from './Sections/SectionAbout';
-import SectionSkills   from './Sections/SectionSkills';
-import SectionProjects from './Sections/SectionProjects';
-import SectionContact  from './Sections/SectionContact';
-import GlobalNav       from './GlobalNav';
+import PersistentScene    from './Scene3D/PersistentScene';
+import SectionHero        from './Sections/SectionHero';
+import SectionAbout       from './Sections/SectionAbout';
+import SectionSkills      from './Sections/SectionSkills';
+import SectionExperience  from './Sections/SectionExperience';
+import SectionEducation   from './Sections/SectionEducation';
+import SectionProjects    from './Sections/SectionProjects';
+import SectionContact     from './Sections/SectionContact';
+import GlobalNav          from './GlobalNav';
 
+// SECTIONS drives nav + observer. Each section has its OWN astre in
+// PersistentScene — the camera Bezier-travels between all 7 astres.
 const SECTIONS = [
-  { id: 'hero',     index: 0, label: 'ACCUEIL' },
-  { id: 'about',    index: 1, label: 'A PROPOS' },
-  { id: 'skills',   index: 2, label: 'COMPETENCES' },
-  { id: 'projects', index: 3, label: 'PROJETS' },
-  { id: 'contact',  index: 4, label: 'CONTACT' },
+  { id: 'hero',       label: 'ACCUEIL',     astreIndex: 0 },
+  { id: 'about',      label: 'A PROPOS',    astreIndex: 1 },
+  { id: 'skills',     label: 'COMPETENCES', astreIndex: 2 },
+  { id: 'experience', label: 'EXPERIENCES', astreIndex: 3 },
+  { id: 'education',  label: 'PARCOURS',    astreIndex: 4 },
+  { id: 'projects',   label: 'PROJETS',     astreIndex: 5 },
+  { id: 'contact',    label: 'CONTACT',     astreIndex: 6 },
 ];
 
 export default function PortfolioLayout() {
-  // Ref partagee avec PersistentScene (mise a jour sans re-render)
+  // Ref shared with PersistentScene (no re-render needed)
   const activeSectionRef = useRef(0);
-  // State pour la nav UI (re-render OK ici)
+  // State for nav UI
   const [activeId, setActiveId] = useState('hero');
 
   useEffect(() => {
-    // Intersection Observer pour detecter quelle section est visible
-    const sections = SECTIONS.map(s => document.getElementById(s.id)).filter(Boolean);
+    const sections = SECTIONS
+      .map(s => ({ ...s, el: document.getElementById(s.id) }))
+      .filter(s => s.el);
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting && entry.intersectionRatio > 0.4) {
-          const section = SECTIONS.find(s => s.id === entry.target.id);
+          const section = sections.find(s => s.el === entry.target);
           if (section) {
-            activeSectionRef.current = section.index;
+            activeSectionRef.current = section.astreIndex;
             setActiveId(section.id);
           }
         }
@@ -40,7 +47,7 @@ export default function PortfolioLayout() {
       rootMargin: '-10% 0px -10% 0px',
     });
 
-    sections.forEach(s => observer.observe(s));
+    sections.forEach(s => observer.observe(s.el));
     return () => observer.disconnect();
   }, []);
 
@@ -56,22 +63,24 @@ export default function PortfolioLayout() {
       background: '#050309',
       fontFamily: "'Courier New',monospace",
     }}>
-      {/* Scene 3D persistante en arriere-plan */}
+      {/* Persistent 3D scene (Hero / Saturne / Skills / Projects / Contact) */}
       <PersistentScene activeSectionRef={activeSectionRef} />
 
-      {/* Navigation globale (sticky) */}
+      {/* Sticky global nav */}
       <GlobalNav sections={SECTIONS} activeId={activeId} onNavigate={scrollTo} />
 
-      {/* Sections empilees */}
+      {/* Stacked sections */}
       <main style={{ position: 'relative', zIndex: 5 }}>
-        <SectionHero    onNavigate={scrollTo} />
+        <SectionHero       onNavigate={scrollTo} />
         <SectionAbout />
         <SectionSkills />
+        <SectionExperience />
+        <SectionEducation />
         <SectionProjects />
         <SectionContact />
       </main>
 
-      {/* Status bar globale */}
+      {/* Global status bar */}
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 20,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -96,7 +105,6 @@ export default function PortfolioLayout() {
         html { scroll-behavior: smooth; }
         body { margin: 0; background: #050309; }
 
-        /* Responsive base */
         @media (max-width: 768px) {
           html { font-size: 14px; }
         }
