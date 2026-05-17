@@ -5,7 +5,7 @@
  *
  * Local dev: defaults to "dev".
  */
-export const APP_VERSION = import.meta.env.IMAGE_TAG || 'dev';
+export const APP_VERSION = import.meta.env.VITE_APP_VERSION || 'dev';
 
 /**
  * Display-friendly version: strips a leading "prod-" so we show "v1.0.11"

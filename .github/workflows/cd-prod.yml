@@ -51,7 +51,9 @@ jobs:
 
           echo "→ Génération du .env..."
           cat > .env << 'ENVEOF'
-          IMAGE_TAG=${IMAGE_TAG}
+          VITE_API_URL=${{ secrets.VITE_API_URL }}
+          VITE_SITE_URL=${{ secrets.VITE_SITE_URL }}
+          VITE_APP_VERSION=${IMAGE_TAG}
           ENVEOF
           chmod 600 .env
 
