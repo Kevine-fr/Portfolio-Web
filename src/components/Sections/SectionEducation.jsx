@@ -111,8 +111,8 @@ export default function SectionEducation() {
       {/* Content */}
       <div style={{ position: 'relative', zIndex: 3, width: '100%' }}>
         <div ref={header.ref} style={{
-          maxWidth: '600px', marginLeft: 'auto', marginRight: 0,
-          marginBottom: '3rem', textAlign: 'right',
+          maxWidth: '600px', marginLeft: 0, marginRight: 'auto',
+          marginBottom: '3rem', textAlign: 'left',
           opacity: header.visible ? 1 : 0,
           transform: header.visible ? 'translateY(0)' : 'translateY(30px)',
           transition: 'all 1s ease',
@@ -142,7 +142,7 @@ export default function SectionEducation() {
             fontSize: 'clamp(0.85rem, 1.8vw, 0.95rem)',
             lineHeight: 1.7,
             marginTop: '1.5rem',
-            marginLeft: 'auto',
+            marginLeft: 0,
             maxWidth: '500px',
           }}>
             Le savoir comme un soleil — chaque planete une etape de
@@ -176,7 +176,7 @@ export default function SectionEducation() {
               gap: '1rem',
               maxWidth: '780px',
               width: '100%',
-              marginLeft: 'auto',
+              marginLeft: 0,
             }}>
               {items.map((edu, i) => (
                 <EducationCard key={edu._id || i} edu={edu} delay={i * 0.12} />
