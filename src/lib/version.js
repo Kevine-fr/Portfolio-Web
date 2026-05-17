@@ -5,7 +5,7 @@
  *
  * Local dev: defaults to "dev".
  */
-export const APP_VERSION = import.meta.env.VITE_APP_VERSION || 'dev';
+export const APP_VERSION = import.meta.env.VITE_APP_VERSION || 'v1.0.0';
 
 /**
  * Display-friendly version: strips a leading "prod-" so we show "v1.0.11"
