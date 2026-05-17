@@ -155,7 +155,7 @@ export default function SectionEducation() {
             CHARGEMENT…
           </p>
         ) : items.length === 0 ? (
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
             <p style={{
               color: 'rgba(245,239,224,0.6)',
               fontSize: '0.85rem',
@@ -184,7 +184,7 @@ export default function SectionEducation() {
             </div>
 
             {total > items.length && (
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '2rem' }}>
                 <Link to="/parcours" style={{
                   padding: '0.8rem 1.6rem',
                   border: '1px solid rgba(255,217,122,0.45)',
