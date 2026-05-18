@@ -122,7 +122,7 @@ export default function SectionEducation() {
             margin: '0 0 1rem', opacity: 0.9,
             textShadow: '0 0 14px rgba(255,217,122,0.5)',
           }}>
-            05_PARCOURS &lt;
+            &gt; 05_PARCOURS
           </p>
           <h2 style={{
             margin: 0,
