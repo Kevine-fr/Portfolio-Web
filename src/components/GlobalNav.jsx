@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import { useScrollDirection } from '../hooks/useScrollDirection';
 
 const EXTRA_LINKS = [
-  { to: '/projets',     label: 'PROJETS' },
   { to: '/experiences', label: 'EXPERIENCES' },
   { to: '/parcours',    label: 'FORMATION' },
+  { to: '/projets',     label: 'PROJETS' },
 ];
 
 export default function GlobalNav({ sections, activeId, onNavigate }) {
