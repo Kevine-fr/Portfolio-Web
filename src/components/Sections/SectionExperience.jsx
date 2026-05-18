@@ -218,7 +218,7 @@ export default function SectionExperience() {
             </div>
 
             {total > items.length && (
-              <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '0.3rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '0.25rem' }}>
                 <Link to="/experiences" style={{
                   alignSelf: 'flex-start',
                   marginTop: '2rem',

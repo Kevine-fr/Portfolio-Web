@@ -204,7 +204,7 @@ export default function SectionEducation() {
                   e.currentTarget.style.background = 'rgba(5,3,9,0.5)';
                   e.currentTarget.style.boxShadow = '0 0 20px rgba(255,217,122,0.18)';
                 }}>
-                  ← EXPLORER LE SYSTEME ({total})
+                  EXPLORER LE SYSTEME ({total}) →
                 </Link>
               </div>
             )}

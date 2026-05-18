@@ -268,7 +268,7 @@ export default function ProjectDetail() {
               <p style={{
                 color: '#ffd97a', fontSize: '0.6rem', letterSpacing: '0.25em',
                 marginBottom: '0.6rem',
-              }}>&gt; STACK_TECHNIQUE</p>
+              }}>&gt; STACK TECHNIQUE</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                 {project.techStack.map(t => <TechBadge key={t} variant="accent">{t}</TechBadge>)}
               </div>

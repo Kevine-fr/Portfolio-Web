@@ -105,7 +105,7 @@ export default function SectionContact() {
           <label style={{
             display: 'block', color: DWARF.glow, fontSize: '0.65rem',
             letterSpacing: '0.3em', marginBottom: '0.5rem',
-          }}>&gt; FREQUENCE_RETOUR (EMAIL)</label>
+          }}>&gt; EMAIL</label>
           <input type="email" name="email" value={data.email} onChange={handle} required
             disabled={status === 'sending'}
             className="signal-input" placeholder="contact@galaxy.io" />
