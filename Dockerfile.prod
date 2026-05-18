@@ -3,14 +3,12 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# Build args (passes par la CI). Tous bakes dans le bundle par Vite.
+# Build args (passes par la CI). Bakes statiques par Vite.
 ARG VITE_API_URL=http://localhost:8000
 ARG VITE_SITE_URL=localhost
-ARG IMAGE_TAG=dev
 
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_SITE_URL=$VITE_SITE_URL
-ENV VITE_APP_VERSION=$IMAGE_TAG
 
 COPY package*.json ./
 RUN if [ -f package-lock.json ]; then npm ci --legacy-peer-deps; else npm install --legacy-peer-deps; fi
@@ -24,5 +22,10 @@ FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# Entrypoint qui genere /version.js depuis $IMAGE_TAG a chaque demarrage
+# du container — la version est lue depuis le .env du VPS, pas du build.
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT ["/docker-entrypoint.sh"]

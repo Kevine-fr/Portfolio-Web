@@ -1,14 +1,24 @@
 /**
- * App version, injected at BUILD time by Vite from the env var VITE_APP_VERSION.
- * Set via Dockerfile.prod's `ARG IMAGE_TAG` → `ENV VITE_APP_VERSION=$IMAGE_TAG`,
- * itself passed from the CI as `--build-arg IMAGE_TAG=prod-v1.0.11`.
+ * App version lue a l'execution depuis window.APP_VERSION.
  *
- * Local dev: defaults to "dev".
+ * En production, /version.js est genere par docker-entrypoint.sh a chaque
+ * demarrage du container, en lisant la variable IMAGE_TAG du .env du VPS.
+ * Donc changer la version = editer le .env + redemarrer le container,
+ * AUCUN rebuild d'image n'est necessaire.
+ *
+ * En dev local : window.APP_VERSION n'est pas defini, fallback sur "dev".
  */
-export const APP_VERSION = import.meta.env.VITE_APP_VERSION || 'v1.0.0';
+
+const RAW = (typeof window !== 'undefined' && window.APP_VERSION) || 'dev';
 
 /**
- * Display-friendly version: strips a leading "prod-" so we show "v1.0.11"
- * instead of "prod-v1.0.11" in the UI.
+ * Version complete telle que dans IMAGE_TAG (ex: "prod-v1.0.19").
  */
-export const APP_VERSION_DISPLAY = APP_VERSION.replace(/^prod-/, '');
+export const APP_VERSION = RAW;
+
+/**
+ * Version reduite a la partie semver pour affichage : "v1.0.19".
+ * Si aucune correspondance trouvee, retourne RAW tel quel (ex: "dev").
+ */
+const SEMVER_MATCH = RAW.match(/v\d+\.\d+\.\d+/);
+export const APP_VERSION_DISPLAY = SEMVER_MATCH ? SEMVER_MATCH[0] : RAW;

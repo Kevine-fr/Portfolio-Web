@@ -3,6 +3,10 @@ services:
     image: zstin4/web-portfolio:${IMAGE_TAG}
     container_name: web_portfolio
     restart: always
+    environment:
+      # Injecte la valeur du .env dans le container. L'entrypoint la lira
+      # pour generer /version.js au demarrage.
+      IMAGE_TAG: ${IMAGE_TAG}
     expose:
       - "80"
     networks:

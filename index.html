@@ -9,6 +9,9 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Genere au demarrage du container (docker-entrypoint.sh).
+         Doit etre charge AVANT le bundle React. -->
+    <script src="/version.js"></script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
