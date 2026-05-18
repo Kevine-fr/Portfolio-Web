@@ -86,6 +86,10 @@ export default function PortfolioLayout() {
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 20,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0.7rem 2.5rem',
+        // PWA standalone : laisser de l'espace pour le home indicator iOS
+        paddingBottom: 'calc(0.7rem + env(safe-area-inset-bottom, 0px))',
+        paddingLeft:   'calc(2.5rem + env(safe-area-inset-left, 0px))',
+        paddingRight:  'calc(2.5rem + env(safe-area-inset-right, 0px))',
         borderTop: '1px solid rgba(212,193,154,0.07)',
         background: 'rgba(5,3,9,0.7)',
         backdropFilter: 'blur(8px)',

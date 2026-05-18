@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const EXTRA_LINKS = [
+  { to: '/projets',     label: 'PROJETS' },
   { to: '/experiences', label: 'EXPERIENCES' },
   { to: '/parcours',    label: 'FORMATION' },
-  { to: '/projets',     label: 'PROJETS' },
 ];
 
 export default function GlobalNav({ sections, activeId, onNavigate }) {
@@ -28,6 +28,10 @@ export default function GlobalNav({ sections, activeId, onNavigate }) {
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 20,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '1.2rem 2.5rem',
+        // PWA standalone : pousse le nav sous la status bar de l'OS
+        paddingTop:    'calc(1.2rem + env(safe-area-inset-top, 0px))',
+        paddingLeft:   'calc(2.5rem + env(safe-area-inset-left, 0px))',
+        paddingRight:  'calc(2.5rem + env(safe-area-inset-right, 0px))',
         borderBottom: '1px solid rgba(212,193,154,0.12)',
         background: 'rgba(5,3,9,0.7)',
         backdropFilter: 'blur(12px)',
@@ -122,6 +126,11 @@ export default function GlobalNav({ sections, activeId, onNavigate }) {
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
           gap: '1.5rem',
+          // PWA standalone : respecter les zones systeme
+          paddingTop:    'env(safe-area-inset-top, 0px)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          paddingLeft:   'env(safe-area-inset-left, 0px)',
+          paddingRight:  'env(safe-area-inset-right, 0px)',
         }}>
           {sections.slice(1).map(s => {
             const active = s.id === activeId;
@@ -163,7 +172,9 @@ export default function GlobalNav({ sections, activeId, onNavigate }) {
 
       {/* Barre de progression du scroll */}
       <div style={{
-        position: 'fixed', top: '60px', left: 0, right: 0,
+        position: 'fixed',
+        top: 'calc(60px + env(safe-area-inset-top, 0px))',
+        left: 0, right: 0,
         height: '1px', zIndex: 20, background: 'rgba(212,193,154,0.08)',
       }}>
         <div style={{
