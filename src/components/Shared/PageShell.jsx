@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import PersistentScene from '../Scene3D/PersistentScene';
+import { useScrollDirection } from '../../hooks/useScrollDirection';
 import { APP_VERSION_DISPLAY } from '../../lib/version';
 
 /**
@@ -18,6 +19,7 @@ export default function PageShell({ children, label, sceneSection = 1 }) {
   // Constant ref → PersistentScene's animate() always reads the same index
   // and never triggers a Bezier camera travel.
   const frozenRef = useRef(sceneSection);
+  const hidden = useScrollDirection(80, 8);
 
   return (
     <div style={{
@@ -37,7 +39,7 @@ export default function PageShell({ children, label, sceneSection = 1 }) {
         background: 'radial-gradient(ellipse at center, transparent 0%, rgba(5,3,9,0.55) 80%)',
       }} />
 
-      {/* Top nav */}
+      {/* Top nav — sticky qui se retracte au scroll bas, revient au scroll haut */}
       <header style={{
         position: 'sticky', top: 0, zIndex: 25,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -49,6 +51,8 @@ export default function PageShell({ children, label, sceneSection = 1 }) {
         background: 'rgba(5,3,9,0.7)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
+        transform: hidden ? 'translateY(-110%)' : 'translateY(0)',
+        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       }}>
         <Link to="/" className="hero-pulse-glow" style={{
           color: '#d4c19a', fontSize: '0.7rem', letterSpacing: '0.35em',

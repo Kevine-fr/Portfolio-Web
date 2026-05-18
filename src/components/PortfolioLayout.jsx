@@ -8,6 +8,7 @@ import SectionEducation   from './Sections/SectionEducation';
 import SectionProjects    from './Sections/SectionProjects';
 import SectionContact     from './Sections/SectionContact';
 import GlobalNav          from './GlobalNav';
+import { useScrollDirection } from '../hooks/useScrollDirection';
 import { APP_VERSION_DISPLAY } from '../lib/version';
 
 // SECTIONS drives nav + observer. Each section has its OWN astre in
@@ -27,6 +28,7 @@ export default function PortfolioLayout() {
   const activeSectionRef = useRef(0);
   // State for nav UI
   const [activeId, setActiveId] = useState('hero');
+  const hidden = useScrollDirection(80, 8);
 
   useEffect(() => {
     const sections = SECTIONS
@@ -93,6 +95,9 @@ export default function PortfolioLayout() {
         borderTop: '1px solid rgba(212,193,154,0.07)',
         background: 'rgba(5,3,9,0.7)',
         backdropFilter: 'blur(8px)',
+        // Retracte vers le bas en synchro avec la nav haute
+        transform: hidden ? 'translateY(100%)' : 'translateY(0)',
+        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       }}>
         <span style={{ color: 'rgba(212,193,154,0.65)', fontSize: '0.6rem', letterSpacing: '0.25em' }}>
           {APP_VERSION_DISPLAY} <span style={{ color: '#ffd97a', animation: 'blink 1.5s ease-in-out infinite' }}>●</span>

@@ -1,15 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useScrollDirection } from '../hooks/useScrollDirection';
 
 const EXTRA_LINKS = [
+  { to: '/projets',     label: 'PROJETS' },
   { to: '/experiences', label: 'EXPERIENCES' },
   { to: '/parcours',    label: 'FORMATION' },
-  { to: '/projets',     label: 'PROJETS' },
 ];
 
 export default function GlobalNav({ sections, activeId, onNavigate }) {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const hidden = useScrollDirection(80, 8);
+  // Quand le drawer mobile est ouvert, on force la nav visible
+  // sinon elle peut se retracter pendant l'ouverture et confondre l'utilisateur
+  const navHidden = hidden && !mobileOpen;
 
   useEffect(() => {
     const onScroll = () => {
@@ -28,6 +33,9 @@ export default function GlobalNav({ sections, activeId, onNavigate }) {
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 20,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '1.2rem 2.5rem',
+        // Retracte la nav vers le haut quand l'utilisateur scroll vers le bas
+        transform: navHidden ? 'translateY(-100%)' : 'translateY(0)',
+        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         // PWA standalone : pousse le nav sous la status bar de l'OS
         paddingTop:    'calc(1.2rem + env(safe-area-inset-top, 0px))',
         paddingLeft:   'calc(2.5rem + env(safe-area-inset-left, 0px))',
@@ -176,6 +184,8 @@ export default function GlobalNav({ sections, activeId, onNavigate }) {
         top: 'calc(60px + env(safe-area-inset-top, 0px))',
         left: 0, right: 0,
         height: '1px', zIndex: 20, background: 'rgba(212,193,154,0.08)',
+        transform: navHidden ? 'translateY(calc(-60px - env(safe-area-inset-top, 0px) - 20px))' : 'translateY(0)',
+        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       }}>
         <div style={{
           height: '100%',
