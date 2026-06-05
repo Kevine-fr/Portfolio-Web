@@ -1,7 +1,7 @@
 services:
   app:
     image: zstin4/web-portfolio:${IMAGE_TAG}
-    container_name: web_portfolio
+    container_name: portfolio-web
     restart: always
     environment:
       # Injecte la valeur du .env dans le container. L'entrypoint la lira
