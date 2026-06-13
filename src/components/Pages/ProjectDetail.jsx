@@ -36,35 +36,44 @@ function Lightbox({ images, index, onClose, onPrev, onNext }) {
   return (
     <div onClick={onClose} style={{
       position: 'fixed', inset: 0, zIndex: 50,
+      width: '100vw', height: '100dvh',
+      boxSizing: 'border-box',
+      overflow: 'hidden',
       background: 'rgba(5,3,9,0.95)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
+      paddingTop: 'calc(env(safe-area-inset-top) + 3.5rem)',
+      paddingBottom: 'calc(env(safe-area-inset-bottom) + 3.5rem)',
+      paddingLeft: 'calc(env(safe-area-inset-left) + 3.75rem)',
+      paddingRight: 'calc(env(safe-area-inset-right) + 3.75rem)',
       cursor: 'zoom-out',
       animation: 'fade-in 0.2s ease',
     }}>
       <button onClick={(e) => { e.stopPropagation(); onPrev(); }} aria-label="Précédent" style={{
-        position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)',
+        position: 'absolute', left: 'calc(env(safe-area-inset-left) + 0.5rem)', top: '50%', transform: 'translateY(-50%)',
         background: 'rgba(212,193,154,0.1)', border: '1px solid rgba(212,193,154,0.3)',
         color: '#d4c19a', width: '44px', height: '44px',
         cursor: 'pointer', fontSize: '1.2rem', fontFamily: 'inherit',
-        borderRadius: '2px',
+        borderRadius: '2px', flexShrink: 0,
       }}>‹</button>
 
       <img src={src} alt={`Capture ${index + 1}`} style={{
-        maxWidth: '90vw', maxHeight: '85vh',
+        maxWidth: '100%', maxHeight: '100%',
         objectFit: 'contain',
         boxShadow: '0 0 40px rgba(212,193,154,0.3)',
       }} onClick={(e) => e.stopPropagation()} />
 
       <button onClick={(e) => { e.stopPropagation(); onNext(); }} aria-label="Suivant" style={{
-        position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)',
+        position: 'absolute', right: 'calc(env(safe-area-inset-right) + 0.5rem)', top: '50%', transform: 'translateY(-50%)',
         background: 'rgba(212,193,154,0.1)', border: '1px solid rgba(212,193,154,0.3)',
         color: '#d4c19a', width: '44px', height: '44px',
         cursor: 'pointer', fontSize: '1.2rem', fontFamily: 'inherit',
-        borderRadius: '2px',
+        borderRadius: '2px', flexShrink: 0,
       }}>›</button>
 
       <button onClick={onClose} aria-label="Fermer" style={{
-        position: 'absolute', top: '1rem', right: '1rem',
+        position: 'absolute',
+        top: 'calc(env(safe-area-inset-top) + 0.75rem)',
+        right: 'calc(env(safe-area-inset-right) + 0.75rem)',
         background: 'rgba(212,193,154,0.1)', border: '1px solid rgba(212,193,154,0.3)',
         color: '#d4c19a', width: '40px', height: '40px',
         cursor: 'pointer', fontSize: '1rem', fontFamily: 'inherit',
@@ -72,10 +81,13 @@ function Lightbox({ images, index, onClose, onPrev, onNext }) {
       }}>×</button>
 
       <div style={{
-        position: 'absolute', bottom: '1.5rem', left: '50%', transform: 'translateX(-50%)',
+        position: 'absolute',
+        bottom: 'calc(env(safe-area-inset-bottom) + 1rem)',
+        left: '50%', transform: 'translateX(-50%)',
         color: 'rgba(245,239,224,0.7)', fontSize: '0.7rem', letterSpacing: '0.2em',
         background: 'rgba(5,3,9,0.7)', padding: '0.4rem 1rem',
         border: '1px solid rgba(212,193,154,0.2)', borderRadius: '2px',
+        whiteSpace: 'nowrap',
       }}>
         {index + 1} / {images.length}
       </div>
