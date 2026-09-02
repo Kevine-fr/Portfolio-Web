@@ -1,3 +1,5 @@
+# Plafonds de ressources (VPS mutualise 8 vCPU / 24 Go) : voir CAPACITY.md dans
+# le depot Infrastructure. Site statique servi par nginx : tres peu de memoire.
 services:
   app:
     image: zstin4/web-portfolio:${IMAGE_TAG}
@@ -9,6 +11,14 @@ services:
       IMAGE_TAG: ${IMAGE_TAG}
     expose:
       - "80"
+    mem_limit: 192m
+    cpus: 1
+    cpu_shares: 1024
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - web
 
