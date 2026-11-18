@@ -168,3 +168,12 @@ UPLOAD_DIR=./uploads
 | Violet neon | `#8800FF` | Accent secondaire |
 | Vert neon | `#00FF88` | Accent tertiaire |
 | Texte discret | `rgba(255,255,255,0.35)` | Corps de texte |
+
+---
+
+## Tests, métriques et retour arrière
+
+- Tests : `npm run lint && npm test && npm run build` ; la CI (`ci.yml`) les relance sur chaque PR, avec `nginx -t` sur la configuration de l'image.
+- **Métriques** : `stub_status` sur le port interne 8080, lu par `nginx-exporter-portfolio-web:9113` (même compose) pour le Prometheus du dépôt Infrastructure.
+- **Retour arrière** : relancer l'image `zstin4/web-portfolio:prod-v<précédente>` (voir `.claude/skills/sauvegarde-restauration`).
+- Conventions de travail : `CLAUDE.md`.
