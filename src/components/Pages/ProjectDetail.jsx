@@ -555,6 +555,7 @@ export default function ProjectDetail() {
           background: rgba(212,193,154,0.1); padding: 0.15em 0.4em; border-radius: 3px;
         }
         .md-content pre {
+          overflow-wrap: normal; max-width: 100%; -webkit-overflow-scrolling: touch;
           background: rgba(5,3,9,0.85); border: 1px solid rgba(212,193,154,0.15);
           padding: 1rem; border-radius: 4px; overflow-x: auto; line-height: 1.5;
         }
@@ -563,8 +564,16 @@ export default function ProjectDetail() {
           border-left: 3px solid rgba(255,217,122,0.5); padding: 0.2em 1em;
           color: rgba(245,239,224,0.7); background: rgba(212,193,154,0.04);
         }
-        .md-content table { border-collapse: collapse; display: block; overflow-x: auto; max-width: 100%; }
-        .md-content th, .md-content td { border: 1px solid rgba(212,193,154,0.2); padding: 0.4em 0.8em; }
+        .md-content table {
+          border-collapse: collapse; display: block; overflow-x: auto; max-width: 100%;
+          width: max-content; overflow-wrap: normal; -webkit-overflow-scrolling: touch;
+        }
+        .md-content th, .md-content td {
+          border: 1px solid rgba(212,193,154,0.2); padding: 0.4em 0.8em;
+          min-width: 6rem; max-width: 22rem; vertical-align: top;
+        }
+        .md-content th { white-space: nowrap; }
+        .md-content td code { white-space: nowrap; }
         .md-content th { background: rgba(212,193,154,0.08); color: #f5efe0; }
         .md-content hr { border: none; border-top: 1px solid rgba(212,193,154,0.2); margin: 2em 0; }
         .md-content details { margin: 0 0 1em; }

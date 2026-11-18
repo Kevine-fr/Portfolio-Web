@@ -27,6 +27,11 @@ jobs:
         run: npm run build
         env:
           VITE_API_URL: https://api.example.test/api/v1
+      # Rendu réel dans Chromium : aucune page ne doit défiler horizontalement
+      # de 320 à 1440 px (débordements corrigés sur mobile : accueil, README).
+      - run: npx playwright install --with-deps chromium
+      - name: Tests responsive (Playwright)
+        run: npm run test:e2e
 
   # La configuration nginx de l'image (site + port des métriques) doit être
   # valide : une faute de frappe ici, et le conteneur ne démarre plus.
