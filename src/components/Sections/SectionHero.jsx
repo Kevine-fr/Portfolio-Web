@@ -1,26 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useFetch } from '../../hooks/useFetch';
+import { useTyping } from '../../hooks/useTyping';
 import { resolveMediaUrl } from '../../lib/api';
 import { FALLBACK_ABOUT } from '../../data/fallbacks';
 import { APP_VERSION_DISPLAY } from '../../lib/version';
-
-function useTyping(texts, speed = 80) {
-  const [displayed, setDisplayed] = useState('');
-  const [textIndex, setTextIndex] = useState(0);
-  const [charIndex, setCharIndex] = useState(0);
-  const [deleting, setDeleting] = useState(false);
-  useEffect(() => {
-    const cur = texts[textIndex];
-    let t;
-    if (!deleting && charIndex < cur.length)        t = setTimeout(() => setCharIndex(c => c + 1), speed);
-    else if (!deleting && charIndex === cur.length) t = setTimeout(() => setDeleting(true), 2200);
-    else if (deleting && charIndex > 0)             t = setTimeout(() => setCharIndex(c => c - 1), speed / 2);
-    else { setDeleting(false); setTextIndex(i => (i + 1) % texts.length); }
-    setDisplayed(cur.slice(0, charIndex));
-    return () => clearTimeout(t);
-  }, [charIndex, deleting, textIndex, texts, speed]);
-  return displayed;
-}
 
 function useCounter(target, duration = 2000, startDelay = 800) {
   const [value, setValue] = useState(0);
@@ -45,9 +28,10 @@ function useCounter(target, duration = 2000, startDelay = 800) {
 function useGlitch(intervalMs = 7000) {
   const [glitching, setGlitching] = useState(false);
   useEffect(() => {
-    const trigger = () => { setGlitching(true); setTimeout(() => setGlitching(false), 250); };
+    let off;
+    const trigger = () => { setGlitching(true); off = setTimeout(() => setGlitching(false), 250); };
     const i = setInterval(trigger, intervalMs + Math.random() * 3000);
-    return () => clearInterval(i);
+    return () => { clearInterval(i); clearTimeout(off); };
   }, [intervalMs]);
   return glitching;
 }
@@ -100,7 +84,10 @@ export default function SectionHero({ onNavigate }) {
   const cvHref = resolveMediaUrl(about?.cvUrl);
   const cvFilename = about?.cvFilename || (about?.cvUrl ? 'CV.pdf' : '');
 
-  useEffect(() => { setTimeout(() => setLoaded(true), 300); }, []);
+  useEffect(() => {
+    const t = setTimeout(() => setLoaded(true), 300);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <section id="hero" style={{

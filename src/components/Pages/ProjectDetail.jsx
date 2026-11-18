@@ -1,6 +1,8 @@
-import { useMemo, useState, useEffect } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { useFetch } from '../../hooks/useFetch';
+import { useCallback, useMemo, useState, useEffect } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { useFetch, peekCache } from '../../hooks/useFetch';
+import { formatDayMonthYear } from '../../lib/dates';
+import { languageColor } from '../../lib/projects';
 import { useReveal } from '../../hooks/useReveal';
 import { resolveMediaUrl } from '../../lib/api';
 import { FALLBACK_PROJECTS } from '../../data/fallbacks';
@@ -19,8 +21,13 @@ const STATUS_COLORS = {
   ARCHIVED: 'rgba(245,239,224,0.4)',
 };
 
-function Lightbox({ images, index, onClose, onPrev, onNext }) {
+export function Lightbox({ images, index, onClose, onPrev, onNext }) {
+  const open = index !== null && index !== undefined && images.length > 0;
+
+  // Only listen while open: the arrow keys used to OPEN the lightbox (and an
+  // empty black overlay on projects without gallery) from anywhere on the page.
   useEffect(() => {
+    if (!open) return undefined;
     const onKey = (e) => {
       if (e.key === 'Escape')     onClose();
       if (e.key === 'ArrowLeft')  onPrev();
@@ -28,13 +35,13 @@ function Lightbox({ images, index, onClose, onPrev, onNext }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, onPrev, onNext]);
+  }, [open, onClose, onPrev, onNext]);
 
-  if (index === null || index === undefined) return null;
+  if (!open) return null;
   const src = resolveMediaUrl(images[index]);
 
   return (
-    <div onClick={onClose} style={{
+    <div onClick={onClose} role="dialog" aria-modal="true" aria-label="Galerie d'images" style={{
       position: 'fixed', inset: 0, zIndex: 50,
       width: '100vw', height: '100dvh',
       boxSizing: 'border-box',
@@ -97,21 +104,98 @@ function Lightbox({ images, index, onClose, onPrev, onNext }) {
   );
 }
 
+function GithubPanel({ github }) {
+  const languages = (github.languages || []).filter((l) => l.percent > 0);
+  const updated = formatDayMonthYear(github.pushedAt);
+  return (
+    <section aria-label="Dépôt GitHub" style={{
+      marginBottom: '3rem',
+      padding: '1.25rem 1.5rem',
+      background: 'rgba(15,10,22,0.65)',
+      border: '1px solid rgba(212,193,154,0.15)',
+      borderRadius: '4px',
+    }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h2 style={{ color: '#ffd97a', fontSize: '0.7rem', letterSpacing: '0.3em', margin: 0 }}>&gt; GITHUB</h2>
+        <a href={github.htmlUrl} target="_blank" rel="noopener noreferrer" style={{
+          color: '#d4c19a', fontSize: '0.65rem', letterSpacing: '0.2em', textDecoration: 'none',
+        }}>{github.fullName} ↗</a>
+      </div>
+      <p style={{
+        display: 'flex', flexWrap: 'wrap', gap: '1.25rem', margin: '0.9rem 0 0',
+        color: 'rgba(245,239,224,0.75)', fontSize: '0.75rem', letterSpacing: '0.08em',
+      }}>
+        <span title="Étoiles">★ {github.stars ?? 0}</span>
+        <span title="Forks">⑂ {github.forks ?? 0}</span>
+        {updated && <span>MIS À JOUR LE {updated.toUpperCase()}</span>}
+      </p>
+      {languages.length > 0 && (
+        <div style={{ marginTop: '1rem' }}>
+          <div role="img" aria-label={languages.map((l) => `${l.name} ${l.percent} %`).join(', ')} style={{
+            display: 'flex', height: '6px', borderRadius: '3px', overflow: 'hidden',
+            background: 'rgba(212,193,154,0.1)',
+          }}>
+            {languages.map((l) => (
+              <span key={l.name} style={{ width: `${l.percent}%`, background: languageColor(l.name) }} />
+            ))}
+          </div>
+          <ul style={{
+            display: 'flex', flexWrap: 'wrap', gap: '0.4rem 1rem', listStyle: 'none',
+            padding: 0, margin: '0.6rem 0 0', color: 'rgba(245,239,224,0.7)', fontSize: '0.68rem',
+          }}>
+            {languages.map((l) => (
+              <li key={l.name} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: languageColor(l.name) }} />
+                {l.name} <span style={{ color: 'rgba(212,193,154,0.55)' }}>{l.percent}%</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {github.topics?.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.9rem' }}>
+          {github.topics.map((t) => <TechBadge key={t}>#{t}</TechBadge>)}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function ProjectDetail() {
   const { slug } = useParams();
-  const navigate = useNavigate();
-  const { data, loading } = useFetch('/projects', FALLBACK_PROJECTS);
+  // Dedicated endpoint: the page used to download every project (with their
+  // full content) to display a single one.
+  const { data: detail, loading, error } = useFetch(`/projects/slug/${encodeURIComponent(slug)}`);
+  const notFound = error?.response?.status === 404;
 
-  const project = useMemo(
-    () => (data || []).find(p => p.slug === slug),
-    [data, slug],
-  );
+  const project = useMemo(() => {
+    if (detail) return detail;
+    if (notFound) return null;
+    // While loading: summary already fetched by the listing; offline: bundled fallback
+    const fromList = (peekCache('/projects?summary=true') || []).find((p) => p.slug === slug);
+    if (fromList) return fromList;
+    return error ? FALLBACK_PROJECTS.find((p) => p.slug === slug) || null : null;
+  }, [detail, notFound, error, slug]);
 
   const header = useReveal();
   const galleryHook = useReveal(0.05);
   const [lightboxIdx, setLightboxIdx] = useState(null);
+  const galleryLength = project?.gallery?.length ?? 0;
 
-  if (loading && !data) {
+  const closeLightbox = useCallback(() => setLightboxIdx(null), []);
+  const prevLightbox = useCallback(
+    () => setLightboxIdx((i) => (i === null || !galleryLength ? null : (i - 1 + galleryLength) % galleryLength)),
+    [galleryLength],
+  );
+  const nextLightbox = useCallback(
+    () => setLightboxIdx((i) => (i === null || !galleryLength ? null : (i + 1) % galleryLength)),
+    [galleryLength],
+  );
+
+  // Reset the lightbox when navigating to another project
+  useEffect(() => setLightboxIdx(null), [slug]);
+
+  if (!project && loading) {
     return <PageShell label="06_PROJETS" sceneSection={5}><Loader /></PageShell>;
   }
   if (!project) {
@@ -147,11 +231,7 @@ export default function ProjectDetail() {
   const cover = resolveMediaUrl(project.coverImage);
   const video = resolveMediaUrl(project.demoVideo);
   const gallery = project.gallery || [];
-
   const openLightbox = (i) => setLightboxIdx(i);
-  const closeLightbox = () => setLightboxIdx(null);
-  const prevLightbox = () => setLightboxIdx(i => (i - 1 + gallery.length) % gallery.length);
-  const nextLightbox = () => setLightboxIdx(i => (i + 1) % gallery.length);
 
   return (
     <PageShell label={project.title.toUpperCase()} sceneSection={5}>
@@ -304,8 +384,23 @@ export default function ProjectDetail() {
           </div>
         )}
 
-        {/* Long description */}
-        {project.longDescription && (
+        {/* Repository stats (projects synced from GitHub) */}
+        {project.github && <GithubPanel github={project.github} />}
+
+        {/* Long description: README / markdown rendered (and sanitized) by the API */}
+        {project.contentHtml ? (
+          <section style={{ marginBottom: '3rem', maxWidth: '850px' }}>
+            <h2 style={{
+              color: '#ffd97a', fontSize: '0.7rem', letterSpacing: '0.3em',
+              margin: '0 0 1rem',
+            }}>&gt; {project.github ? 'README' : 'DETAILS'}</h2>
+            <div
+              className="md-content"
+              data-testid="project-content"
+              dangerouslySetInnerHTML={{ __html: project.contentHtml }}
+            />
+          </section>
+        ) : project.longDescription && (
           <section style={{ marginBottom: '3rem', maxWidth: '750px' }}>
             <h2 style={{
               color: '#ffd97a', fontSize: '0.7rem', letterSpacing: '0.3em',
@@ -427,6 +522,54 @@ export default function ProjectDetail() {
       />
 
       <style>{`
+        .md-content {
+          color: rgba(245,239,224,0.88);
+          font-size: 0.95rem;
+          line-height: 1.8;
+          padding: 1.25rem 1.5rem;
+          background: rgba(15,10,22,0.65);
+          backdrop-filter: blur(6px);
+          -webkit-backdrop-filter: blur(6px);
+          border: 1px solid rgba(212,193,154,0.15);
+          border-radius: 4px;
+          overflow-wrap: anywhere;
+        }
+        .md-content > :first-child { margin-top: 0; }
+        .md-content > :last-child { margin-bottom: 0; }
+        .md-content h1, .md-content h2, .md-content h3, .md-content h4 {
+          color: #f5efe0; font-family: 'Arial Black', sans-serif; line-height: 1.25;
+          margin: 1.8em 0 0.6em; letter-spacing: -0.01em;
+        }
+        .md-content h1 { font-size: 1.6rem; }
+        .md-content h2 { font-size: 1.3rem; border-bottom: 1px solid rgba(212,193,154,0.15); padding-bottom: 0.3em; }
+        .md-content h3 { font-size: 1.1rem; }
+        .md-content p, .md-content ul, .md-content ol, .md-content blockquote, .md-content table, .md-content pre { margin: 0 0 1em; }
+        .md-content ul, .md-content ol { padding-left: 1.4em; }
+        .md-content li + li { margin-top: 0.25em; }
+        .md-content a { color: #ffd97a; text-decoration: underline; text-underline-offset: 3px; }
+        .md-content strong { color: #f5efe0; }
+        .md-content img { max-width: 100%; height: auto; border-radius: 3px; vertical-align: middle; }
+        .md-content p[align="center"], .md-content div[align="center"], .md-content h1[align="center"] { text-align: center; }
+        .md-content code {
+          font-family: 'Courier New', monospace; font-size: 0.85em;
+          background: rgba(212,193,154,0.1); padding: 0.15em 0.4em; border-radius: 3px;
+        }
+        .md-content pre {
+          background: rgba(5,3,9,0.85); border: 1px solid rgba(212,193,154,0.15);
+          padding: 1rem; border-radius: 4px; overflow-x: auto; line-height: 1.5;
+        }
+        .md-content pre code { background: none; padding: 0; font-size: 0.82rem; }
+        .md-content blockquote {
+          border-left: 3px solid rgba(255,217,122,0.5); padding: 0.2em 1em;
+          color: rgba(245,239,224,0.7); background: rgba(212,193,154,0.04);
+        }
+        .md-content table { border-collapse: collapse; display: block; overflow-x: auto; max-width: 100%; }
+        .md-content th, .md-content td { border: 1px solid rgba(212,193,154,0.2); padding: 0.4em 0.8em; }
+        .md-content th { background: rgba(212,193,154,0.08); color: #f5efe0; }
+        .md-content hr { border: none; border-top: 1px solid rgba(212,193,154,0.2); margin: 2em 0; }
+        .md-content details { margin: 0 0 1em; }
+        .md-content summary { cursor: pointer; color: #d4c19a; }
+        @media (max-width: 600px) { .md-content { padding: 1rem; font-size: 0.9rem; } }
         .gallery-thumb:hover {
           border-color: rgba(255,217,122,0.5) !important;
           box-shadow: 0 0 20px rgba(212,193,154,0.25);
