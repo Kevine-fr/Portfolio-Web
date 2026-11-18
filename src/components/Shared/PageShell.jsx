@@ -56,14 +56,17 @@ export default function PageShell({ children, label, sceneSection = 1 }) {
       }}>
         <Link to="/" className="hero-pulse-glow" style={{
           color: '#d4c19a', fontSize: '0.7rem', letterSpacing: '0.35em',
-          textDecoration: 'none',
+          textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
         }}>
           ← PORTFOLIO
         </Link>
         {label && (
-          <span style={{
+          <span title={label} style={{
             color: '#ffd97a', fontSize: '0.65rem', letterSpacing: '0.3em',
             textShadow: '0 0 12px rgba(255,217,122,0.5)',
+            // Long project titles stay on one line (used to wrap on 3 lines on phones)
+            minWidth: 0, marginLeft: '1rem', overflow: 'hidden',
+            textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             &gt; {label}
           </span>

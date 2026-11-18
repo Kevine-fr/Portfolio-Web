@@ -49,6 +49,8 @@ export default function SectionAbout() {
       minHeight: '100vh',
       padding: 'clamp(4rem, 10vh, 8rem) clamp(1.5rem, 5vw, 3rem)',
       display: 'flex', flexDirection: 'column', justifyContent: 'center',
+      // The slide-in reveals (translateX ±30px) must not create a sideways scroll on phones
+      overflowX: 'clip',
     }}>
 
       {/* Header section */}
@@ -162,7 +164,7 @@ export default function SectionAbout() {
             }}>
               &gt; VALEURS.CFG
             </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="values-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               {values.map((v, i) => (
                 <div key={i}
                   className="value-card"
@@ -197,6 +199,7 @@ export default function SectionAbout() {
       </div>
 
       <style>{`
+        .about-grid > * { min-width: 0; }
         .value-card:hover {
           background: rgba(212,193,154,0.08) !important;
           border-color: rgba(255,217,122,0.4) !important;
@@ -204,6 +207,9 @@ export default function SectionAbout() {
         }
         @media (max-width: 900px) {
           .about-grid { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 340px) {
+          .values-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </section>
