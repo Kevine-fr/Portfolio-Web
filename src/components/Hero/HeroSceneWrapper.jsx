@@ -22,7 +22,7 @@ function detectWebGL() {
     // (cas Chrome avec hardware acceleration desactivee)
     const isLost = gl.isContextLost && gl.isContextLost();
     return !isLost;
-  } catch (e) {
+  } catch {
     return false;
   }
 }

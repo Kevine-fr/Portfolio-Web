@@ -20,6 +20,30 @@ npm run dev
 
 ---
 
+## 🧪 Qualité
+
+```bash
+npm test        # Vitest + Testing Library (hooks, pages, sections)
+npm run lint    # ESLint 9 (flat config)
+npm run build   # build de production (chunks three / react séparés, pages en lazy-loading)
+```
+
+La CI (`.github/workflows/ci.yml`) lance lint, tests et build sur chaque pull request.
+
+---
+
+## 🐙 Contenu piloté par GitHub
+
+Les projets, compétences, expériences et formations viennent de l'API (`Portfolio-Server`), qui peut les
+**synchroniser depuis GitHub** (voir la section « Synchronisation GitHub » du README du serveur) :
+
+- `/projets` et l'accueil utilisent `GET /projects?summary=true` (liste allégée, mise en cache côté client) ;
+- `/projets/:slug` utilise `GET /projects/slug/:slug` et affiche le **README rendu** (`contentHtml`, HTML déjà
+  sanitisé par l'API), les étoiles, forks, langages et topics du dépôt ;
+- en cas d'API injoignable, les données de secours de `src/data/fallbacks.js` restent affichées.
+
+---
+
 ## 📁 Structure du projet
 
 ```

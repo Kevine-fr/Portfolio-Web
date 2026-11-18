@@ -3,19 +3,8 @@ import { Link } from 'react-router-dom';
 import { useFetch } from '../../hooks/useFetch';
 import { useReveal } from '../../hooks/useReveal';
 import { FALLBACK_EXPERIENCES } from '../../data/fallbacks';
+import { byMostRecent, formatMonthYear as fmt } from '../../lib/dates';
 
-const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-function fmt(d) {
-  if (!d) return '';
-  const x = new Date(d);
-  if (Number.isNaN(x.getTime())) return '';
-  return `${MONTHS[x.getMonth()]} ${x.getFullYear()}`;
-}
-function getYear(d) {
-  if (!d) return 0;
-  const x = new Date(d);
-  return Number.isNaN(x.getTime()) ? 0 : x.getFullYear();
-}
 
 function ExperienceCard({ exp, delay }) {
   const { ref, visible } = useReveal(0.1);
@@ -129,12 +118,7 @@ export default function SectionExperience() {
 
   // Latest first: current jobs on top, then by start date desc
   const items = useMemo(() => {
-    return [...(data || [])]
-      .sort((a, b) => {
-        if (a.current !== b.current) return a.current ? -1 : 1;
-        return getYear(b.startDate) - getYear(a.startDate);
-      })
-      .slice(0, 3);
+    return [...(data || [])].sort(byMostRecent).slice(0, 3);
   }, [data]);
 
   const total = (data || []).length;

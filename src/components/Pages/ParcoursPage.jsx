@@ -2,20 +2,10 @@ import { useMemo } from 'react';
 import { useFetch } from '../../hooks/useFetch';
 import { useReveal } from '../../hooks/useReveal';
 import { FALLBACK_EDUCATION } from '../../data/fallbacks';
+import { formatMonthYear as fmt, toTime } from '../../lib/dates';
 import PageShell from '../Shared/PageShell';
 import Loader from '../Shared/Loader';
 
-const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-function fmt(d) {
-  if (!d) return '';
-  const x = new Date(d);
-  return Number.isNaN(x.getTime()) ? '' : `${MONTHS[x.getMonth()]} ${x.getFullYear()}`;
-}
-function getYear(d) {
-  if (!d) return 0;
-  const x = new Date(d);
-  return Number.isNaN(x.getTime()) ? 0 : x.getFullYear();
-}
 
 function EducationItem({ edu, index }) {
   const { ref, visible } = useReveal(0.1);
@@ -101,7 +91,7 @@ export default function ParcoursPage() {
   const { data, loading } = useFetch('/education', FALLBACK_EDUCATION);
 
   const sorted = useMemo(() => {
-    return [...(data || [])].sort((a, b) => getYear(b.startDate) - getYear(a.startDate));
+    return [...(data || [])].sort((a, b) => toTime(b.startDate) - toTime(a.startDate));
   }, [data]);
 
   const header = useReveal();

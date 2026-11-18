@@ -2,21 +2,11 @@ import { useMemo } from 'react';
 import { useFetch } from '../../hooks/useFetch';
 import { useReveal } from '../../hooks/useReveal';
 import { FALLBACK_EXPERIENCES } from '../../data/fallbacks';
+import { byMostRecent, formatMonthYear as fmt } from '../../lib/dates';
 import PageShell from '../Shared/PageShell';
 import Loader from '../Shared/Loader';
 import TechBadge from '../Shared/TechBadge';
 
-const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-function fmt(d) {
-  if (!d) return '';
-  const x = new Date(d);
-  return Number.isNaN(x.getTime()) ? '' : `${MONTHS[x.getMonth()]} ${x.getFullYear()}`;
-}
-function getYear(d) {
-  if (!d) return 0;
-  const x = new Date(d);
-  return Number.isNaN(x.getTime()) ? 0 : x.getFullYear();
-}
 
 function ExperienceItem({ exp, index }) {
   const { ref, visible } = useReveal(0.1);
@@ -119,10 +109,7 @@ export default function ExperiencesPage() {
   const { data, loading } = useFetch('/experiences', FALLBACK_EXPERIENCES);
 
   const sorted = useMemo(() => {
-    return [...(data || [])].sort((a, b) => {
-      if (a.current !== b.current) return a.current ? -1 : 1;
-      return getYear(b.startDate) - getYear(a.startDate);
-    });
+    return [...(data || [])].sort(byMostRecent);
   }, [data]);
 
   const header = useReveal();

@@ -3,19 +3,8 @@ import { Link } from 'react-router-dom';
 import { useFetch } from '../../hooks/useFetch';
 import { useReveal } from '../../hooks/useReveal';
 import { FALLBACK_EDUCATION } from '../../data/fallbacks';
+import { formatMonthYear as fmt, toTime } from '../../lib/dates';
 
-const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-function fmt(d) {
-  if (!d) return '';
-  const x = new Date(d);
-  if (Number.isNaN(x.getTime())) return '';
-  return `${MONTHS[x.getMonth()]} ${x.getFullYear()}`;
-}
-function getYear(d) {
-  if (!d) return 0;
-  const x = new Date(d);
-  return Number.isNaN(x.getTime()) ? 0 : x.getFullYear();
-}
 
 function EducationCard({ edu, delay }) {
   const { ref, visible } = useReveal(0.1);
@@ -95,7 +84,7 @@ export default function SectionEducation() {
 
   const items = useMemo(() => {
     return [...(data || [])]
-      .sort((a, b) => getYear(b.startDate) - getYear(a.startDate))
+      .sort((a, b) => toTime(b.startDate) - toTime(a.startDate))
       .slice(0, 3);
   }, [data]);
 

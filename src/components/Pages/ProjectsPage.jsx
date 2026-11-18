@@ -4,6 +4,7 @@ import { useFetch } from '../../hooks/useFetch';
 import { useReveal } from '../../hooks/useReveal';
 import { resolveMediaUrl } from '../../lib/api';
 import { FALLBACK_PROJECTS } from '../../data/fallbacks';
+import { sortProjects } from '../../lib/projects';
 import PageShell from '../Shared/PageShell';
 import Loader from '../Shared/Loader';
 import TechBadge from '../Shared/TechBadge';
@@ -100,6 +101,13 @@ function ProjectListItem({ project, index }) {
               borderRadius: '2px',
             }}>★ FEATURED</span>
           )}
+          {project.github && (
+            <span title={project.github.fullName} style={{
+              color: 'rgba(212,193,154,0.7)',
+              fontSize: '0.55rem',
+              letterSpacing: '0.15em',
+            }}>GITHUB · ★ {project.github.stars ?? 0}</span>
+          )}
         </div>
         {project.subtitle && (
           <p style={{
@@ -149,7 +157,7 @@ function ProjectListItem({ project, index }) {
 }
 
 export default function ProjectsPage() {
-  const { data, loading } = useFetch('/projects', FALLBACK_PROJECTS);
+  const { data, loading } = useFetch('/projects?summary=true', FALLBACK_PROJECTS);
   const [statusFilter, setStatusFilter] = useState('all');
   const [techFilter, setTechFilter] = useState(null);
   const [yearFilter, setYearFilter] = useState(null);
@@ -170,16 +178,13 @@ export default function ProjectsPage() {
 
   // Apply filters
   const filtered = useMemo(() => {
+    // sortProjects() copies: sorting `data` in place mutated the cached API response
     let list = data || [];
     if (statusFilter !== 'all')  list = list.filter(p => p.status === statusFilter);
     if (techFilter)              list = list.filter(p => (p.techStack || []).includes(techFilter));
     if (yearFilter)              list = list.filter(p => p.year === yearFilter);
     // Featured first, then by order, then by year desc
-    return list.sort((a, b) => {
-      if (a.featured !== b.featured) return a.featured ? -1 : 1;
-      if ((a.order ?? 0) !== (b.order ?? 0)) return (a.order ?? 0) - (b.order ?? 0);
-      return (b.year ?? 0) - (a.year ?? 0);
-    });
+    return sortProjects(list);
   }, [data, statusFilter, techFilter, yearFilter]);
 
   const reset = () => { setStatusFilter('all'); setTechFilter(null); setYearFilter(null); };

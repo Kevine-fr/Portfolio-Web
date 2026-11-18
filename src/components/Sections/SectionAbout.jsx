@@ -28,7 +28,7 @@ export default function SectionAbout() {
   const tline = useReveal();
   const vals  = useReveal();
 
-  const { data, loading } = useFetch('/about', FALLBACK_ABOUT);
+  const { data } = useFetch('/about', FALLBACK_ABOUT);
 
   // Sort by `order` if provided
   const timeline = useMemo(

@@ -4,6 +4,7 @@ import { useFetch } from '../../hooks/useFetch';
 import { useReveal } from '../../hooks/useReveal';
 import { resolveMediaUrl } from '../../lib/api';
 import { FALLBACK_PROJECTS } from '../../data/fallbacks';
+import { selectHomeProjects } from '../../lib/projects';
 
 const STATUS_LABELS = {
   published: 'LIVE',
@@ -117,17 +118,11 @@ function ProjectCard({ project, delay }) {
 
 export default function SectionProjects() {
   const header = useReveal();
-  const { data, loading } = useFetch('/projects', FALLBACK_PROJECTS);
+  const { data, loading } = useFetch('/projects?summary=true', FALLBACK_PROJECTS);
 
-  // On the home page, show featured + published projects only (up to 4)
-  const items = useMemo(() => {
-    const all = (data || []).filter(p => p.status !== 'archived');
-    const featured = all.filter(p => p.featured);
-    const rest     = all.filter(p => !p.featured);
-    return [...featured, ...rest]
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-      .slice(0, 4);
-  }, [data]);
+  // Home page: non-archived projects, featured first, then by order (up to 4).
+  // (Concatenating featured + rest then sorting by order lost the "featured first" rule.)
+  const items = useMemo(() => selectHomeProjects(data), [data]);
 
   const total = (data || []).filter(p => p.status !== 'archived').length;
 
