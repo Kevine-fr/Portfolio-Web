@@ -27,3 +27,15 @@ jobs:
         run: npm run build
         env:
           VITE_API_URL: https://api.example.test/api/v1
+
+  # La configuration nginx de l'image (site + port des métriques) doit être
+  # valide : une faute de frappe ici, et le conteneur ne démarre plus.
+  nginx:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: nginx -t
+        run: |
+          docker run --rm --add-host portfolio-web:127.0.0.1 \
+            -v "$PWD/nginx.conf:/etc/nginx/conf.d/default.conf:ro" \
+            nginx:alpine nginx -t
