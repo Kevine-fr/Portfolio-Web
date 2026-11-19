@@ -1,0 +1,16 @@
+# Fiche lue par le portfolio (Portfolio-Server, synchronisation GitHub).
+# Elle prime sur le README : titre, résumé et technologies affichés.
+title: Portfolio 3D
+subtitle: Site public du portfolio
+description: 'Portfolio interactif en 3D : scène three.js, animations Framer Motion, projets et parcours
+  chargés depuis l''API du portfolio.'
+techStack:
+- React
+- Vite
+- Three.js
+- Framer Motion
+- Nginx
+- Docker
+status: published
+year: 2026
+liveUrl: https://web-portfolio.wk-archi-o22a-15m-g1.fr

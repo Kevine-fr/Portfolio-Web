@@ -1,5 +1,7 @@
 # CV 3D Portfolio — Dark Tech
 
+Portfolio interactif en 3D : scène three.js, animations Framer Motion, projets et parcours chargés depuis l'API du portfolio.
+
 Stack : React 18 + Vite + Three.js + Framer Motion + Node.js + MongoDB
 
 ---
