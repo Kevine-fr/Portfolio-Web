@@ -88,3 +88,32 @@ test('un titre de projet long tient sur une ligne dans la barre du haut', async 
   await expect(label).toBeVisible();
   expect((await label.boundingBox()).height).toBeLessThan(24);
 });
+
+test.describe('Naviguer dans mon espace', () => {
+  for (const width of [390, 1440]) {
+    test(`saut en hyperespace puis détails de l'astre à ${width} px`, async ({ page }) => {
+      const errors = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/naviguer');
+      await page.getByRole('button', { name: 'DÉCOLLER' }).click();
+      await page.getByRole('navigation', { name: 'Destinations' }).getByRole('button', { name: /PROJETS/ }).click();
+      await expect(page.getByRole('status')).toContainText('PROJETS');
+      // Charge + tunnel + sortie ≈ 2,7 s ; une machine de CI chargée rend moins d'images
+      const details = page.getByRole('region', { name: /PROJETS/ });
+      await expect(details).toBeVisible({ timeout: 15_000 });
+      await expect(details.getByRole('link', { name: /Portfolio 3D Immersif/ })).toBeVisible();
+      const result = await horizontalOverflow(page);
+      expect(result.scrollWidth).toBeLessThanOrEqual(result.viewport);
+      expect(errors).toEqual([]);
+    });
+  }
+
+  test("l'onglet NAVIGUER de l'accueil ouvre le mode vaisseau", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await page.getByRole('link', { name: /NAVIGUER/ }).first().click();
+    await expect(page).toHaveURL(/\/naviguer$/);
+    await expect(page.getByTestId('navigation-hud')).toBeVisible();
+  });
+});

@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useScrollDirection } from '../hooks/useScrollDirection';
 
+// L'onglet du mode vaisseau : mis en avant, c'est l'entree de la scene pilotable
+const NAV_ESPACE = { to: '/naviguer', label: 'NAVIGUER' };
+
 const EXTRA_LINKS = [
   { to: '/experiences', label: 'EXPERIENCES' },
   { to: '/parcours',    label: 'FORMATION' },
@@ -90,6 +93,21 @@ export default function GlobalNav({ sections, activeId, onNavigate }) {
             background: 'rgba(212,193,154,0.25)',
           }} />
 
+          <Link
+            to={NAV_ESPACE.to}
+            className="hero-nav-item nav-espace"
+            title="Naviguer dans mon espace en vaisseau"
+            style={{
+              color: '#ffd97a',
+              fontSize: '0.63rem',
+              letterSpacing: '0.16em',
+              textDecoration: 'none',
+              border: '1px solid rgba(255,217,122,0.45)',
+              padding: '0.3rem 0.6rem',
+            }}>
+            ✦ {NAV_ESPACE.label}
+          </Link>
+
           {EXTRA_LINKS.map(link => (
             <Link
               key={link.to}
@@ -162,6 +180,19 @@ export default function GlobalNav({ sections, activeId, onNavigate }) {
             margin: '0.5rem 0',
           }} />
 
+          <Link
+            to={NAV_ESPACE.to}
+            onClick={() => setMobileOpen(false)}
+            style={{
+              color: '#ffd97a',
+              fontSize: '0.95rem', letterSpacing: '0.3em',
+              textDecoration: 'none',
+              border: '1px solid rgba(255,217,122,0.45)',
+              padding: '0.5rem 1rem',
+            }}>
+            ✦ NAVIGUER DANS MON ESPACE
+          </Link>
+
           {EXTRA_LINKS.map(link => (
             <Link
               key={link.to}
@@ -205,6 +236,13 @@ export default function GlobalNav({ sections, activeId, onNavigate }) {
 
         .hero-nav-item:hover {
           color: #d4c19a !important;
+        }
+
+        /* L'onglet NAVIGUER a ajoute un lien : entre 769 et 1200 px la barre
+           debordait de 62 px (epreuve responsive a 1024 px). */
+        @media (max-width: 1200px) {
+          .nav-desktop { gap: 0.85rem !important; }
+          .nav-desktop .hero-nav-item { letter-spacing: 0.1em !important; }
         }
 
         @media (max-width: 768px) {
