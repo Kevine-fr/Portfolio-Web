@@ -1,0 +1,254 @@
+/* Cockpit du mode « Naviguer dans mon espace ». Même palette que le site :
+   or pâle sur noir, monospace. Les panneaux sont des îlots cliquables posés
+   sur une surface de pilotage qui capte le glisser. */
+
+.nav-hud {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  font-family: 'Courier New', monospace;
+  color: #f5efe0;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  padding:
+    env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+.nav-hud > * { pointer-events: auto; }
+.nav-hud .nav-tunnel,
+.nav-hud .nav-eclair,
+.nav-hud .nav-manche { pointer-events: none; }
+
+.nav-surface {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  cursor: grab;
+}
+.nav-surface:active { cursor: grabbing; }
+
+.nav-tunnel {
+  position: absolute; inset: 0; opacity: 0;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0) 35%, rgba(40,80,160,0.35) 75%, rgba(5,3,9,0.95) 100%);
+}
+.nav-eclair { position: absolute; inset: 0; opacity: 0; background: #eef6ff; }
+
+.nav-manche {
+  position: absolute;
+  width: 140px; height: 140px;
+  margin: -70px 0 0 -70px;
+  border: 1px solid rgba(212,193,154,0.45);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.nav-manche span {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(255,217,122,0.25);
+  border: 1px solid #ffd97a;
+  box-shadow: 0 0 14px rgba(255,217,122,0.5);
+}
+
+.nav-titre-bloc {
+  margin: 0 0 0.6rem;
+  color: #ffd97a;
+  font-size: 0.62rem;
+  letter-spacing: 0.3em;
+}
+
+.nav-hud kbd {
+  display: inline-block;
+  min-width: 1.3em;
+  padding: 0 0.3em;
+  border: 1px solid rgba(212,193,154,0.45);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 0.85em;
+  text-align: center;
+  color: #d4c19a;
+}
+
+.nav-hud button { font-family: inherit; cursor: pointer; }
+
+/* ── En-tête */
+.nav-entete {
+  position: absolute; top: 0; left: 0; right: 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: calc(1rem + env(safe-area-inset-top, 0px)) 1.5rem 1rem;
+  background: linear-gradient(180deg, rgba(5,3,9,0.85), rgba(5,3,9,0));
+  pointer-events: none;
+}
+.nav-entete > * { pointer-events: auto; }
+.nav-entete h1 {
+  margin: 0;
+  font-size: 0.72rem; font-weight: 400; letter-spacing: 0.35em;
+  color: #d4c19a;
+  text-shadow: 0 0 12px rgba(255,217,122,0.45);
+  text-align: center;
+}
+.nav-quitter {
+  color: rgba(245,239,224,0.75); text-decoration: none;
+  font-size: 0.65rem; letter-spacing: 0.2em; white-space: nowrap;
+}
+.nav-quitter:hover { color: #ffd97a; }
+.nav-aide-btn {
+  width: 2rem; height: 2rem; flex: none;
+  background: transparent; color: #d4c19a;
+  border: 1px solid rgba(212,193,154,0.5); border-radius: 50%;
+}
+
+/* ── Destinations */
+.nav-destinations {
+  position: absolute; left: 1.5rem; top: 50%; transform: translateY(-50%);
+  padding: 1rem;
+  background: rgba(5,3,9,0.6);
+  border: 1px solid rgba(212,193,154,0.15);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.nav-destinations ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+.nav-destinations button {
+  display: grid; grid-template-columns: auto 1fr; column-gap: 0.6rem; align-items: center;
+  width: 100%; padding: 0.4rem 0.6rem;
+  background: transparent; color: rgba(245,239,224,0.8); text-align: left;
+  border: 1px solid transparent;
+  font-size: 0.66rem; letter-spacing: 0.14em;
+  transition: border-color 0.2s, color 0.2s;
+}
+.nav-destinations button kbd { grid-row: span 2; }
+.nav-destinations .nom-astre { color: rgba(212,193,154,0.55); font-size: 0.58rem; letter-spacing: 0.06em; }
+.nav-destinations button:hover:not(:disabled) { border-color: rgba(212,193,154,0.4); color: #ffd97a; }
+.nav-destinations button:disabled { cursor: default; opacity: 0.55; }
+.nav-destinations button[aria-current] { opacity: 1; color: #ffd97a; border-color: rgba(255,217,122,0.4); }
+.nav-destinations button.cible { opacity: 1; color: #c8e8ff; border-color: rgba(200,232,255,0.6); box-shadow: 0 0 12px rgba(160,200,255,0.35); }
+
+/* ── Télémétrie */
+.nav-telemetrie {
+  position: absolute; left: 50%; bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+  pointer-events: none;
+  text-align: center;
+}
+.nav-statut { font-size: 0.62rem; letter-spacing: 0.25em; color: #d4c19a; }
+.nav-vitesse { font-size: 1.3rem; letter-spacing: 0.1em; color: #f5efe0; }
+.nav-vitesse small { font-size: 0.5rem; letter-spacing: 0.2em; color: rgba(212,193,154,0.6); }
+.nav-jauge { width: 160px; height: 2px; background: rgba(212,193,154,0.15); overflow: hidden; }
+.nav-jauge span {
+  display: block; height: 100%; width: 100%;
+  background: linear-gradient(90deg, #d4c19a, #ffd97a);
+  transform-origin: left; transform: scaleX(0);
+}
+
+/* ── Détails de l'astre */
+.nav-details {
+  position: absolute; right: 1.5rem; top: 50%; transform: translateY(-50%);
+  width: min(360px, calc(100vw - 3rem));
+  max-height: 70vh; overflow-y: auto;
+  background: rgba(5,3,9,0.78);
+  border: 1px solid rgba(212,193,154,0.25);
+  box-shadow: 0 0 30px rgba(255,217,122,0.08);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  animation: nav-apparition 0.5s ease;
+}
+@keyframes nav-apparition { from { opacity: 0; transform: translate(20px, -50%); } }
+.nav-details-entete {
+  display: flex; justify-content: space-between; gap: 1rem; width: 100%;
+  padding: 0.8rem 1rem;
+  background: transparent; border: 0; border-bottom: 1px solid rgba(212,193,154,0.15);
+  color: #ffd97a; font-size: 0.6rem; letter-spacing: 0.22em; text-align: left;
+}
+.nav-details-corps { padding: 1rem 1.1rem 1.2rem; }
+.nav-details h2 {
+  margin: 0 0 0.6rem;
+  font-family: 'Arial Black', sans-serif; font-size: 1.35rem; line-height: 1.1;
+  color: #f5efe0;
+}
+.nav-details-texte { margin: 0 0 0.9rem; font-size: 0.8rem; line-height: 1.6; color: rgba(245,239,224,0.82); }
+.nav-etiquettes { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0 0 0.9rem; }
+.nav-etiquettes span { padding: 0.15rem 0.45rem; border: 1px solid rgba(212,193,154,0.35); font-size: 0.62rem; color: #d4c19a; }
+.nav-details ul { list-style: none; margin: 0 0 1rem; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+.nav-details li { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.75rem; overflow-wrap: anywhere; }
+.nav-details li strong { color: #f5efe0; font-weight: 700; }
+.nav-details li a { color: inherit; text-decoration: none; }
+.nav-details li a:hover strong { color: #ffd97a; }
+.nav-details li span { color: rgba(212,193,154,0.75); font-size: 0.68rem; }
+.nav-details-lien {
+  display: inline-block; padding: 0.55rem 1rem;
+  background: linear-gradient(135deg, #d4c19a 0%, #8a6f3f 100%);
+  color: #050309; text-decoration: none; font-size: 0.65rem; letter-spacing: 0.2em; font-weight: 700;
+}
+
+/* ── Gaz (tactile) */
+.nav-gaz {
+  position: absolute; right: 1.2rem; bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px));
+  display: none; flex-direction: column; gap: 0.6rem;
+}
+.nav-gaz button {
+  width: 58px; height: 58px; border-radius: 50%;
+  background: rgba(5,3,9,0.6); color: #ffd97a;
+  border: 1px solid rgba(212,193,154,0.5);
+  font-size: 1.2rem; touch-action: none;
+}
+.nav-gaz button:active { background: rgba(255,217,122,0.25); }
+
+/* ── Aide */
+.nav-aide {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(440px, calc(100vw - 2rem));
+  padding: 1.4rem 1.5rem;
+  background: rgba(5,3,9,0.88);
+  border: 1px solid rgba(212,193,154,0.3);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  font-size: 0.74rem; line-height: 1.9;
+}
+.nav-aide ul { margin: 0 0 0.6rem; padding-left: 1rem; }
+.nav-aide p:last-of-type { color: rgba(212,193,154,0.8); margin: 0 0 1rem; }
+.nav-aide > button {
+  padding: 0.6rem 1.4rem; border: 0;
+  background: linear-gradient(135deg, #d4c19a 0%, #8a6f3f 100%);
+  color: #050309; font-size: 0.68rem; letter-spacing: 0.25em; font-weight: 700;
+}
+.nav-aide-tactile { display: none; }
+
+/* ── Écrans tactiles : boutons de gaz, aide adaptée */
+@media (pointer: coarse) {
+  .nav-gaz { display: flex; }
+  .nav-aide-clavier { display: none; }
+  .nav-aide-tactile { display: block; }
+  .nav-destinations kbd { display: none; }
+}
+
+/* ── Téléphones : destinations en bandeau, détails en tiroir bas */
+@media (max-width: 768px) {
+  .nav-entete { padding: calc(0.8rem + env(safe-area-inset-top, 0px)) 1rem 0.8rem; }
+  .nav-entete h1 { font-size: 0.58rem; letter-spacing: 0.22em; }
+  .nav-destinations {
+    left: 0; right: 0; top: calc(3.6rem + env(safe-area-inset-top, 0px)); transform: none;
+    padding: 0.4rem 0.6rem; border-left: 0; border-right: 0;
+    overflow-x: auto; overscroll-behavior-x: contain;
+  }
+  .nav-destinations .nav-titre-bloc, .nav-destinations .nom-astre { display: none; }
+  .nav-destinations ol { flex-direction: row; gap: 0.3rem; width: max-content; }
+  .nav-destinations button { display: flex; gap: 0.35rem; padding: 0.45rem 0.6rem; font-size: 0.6rem; white-space: nowrap; }
+  .nav-details {
+    left: 0.6rem; right: 0.6rem; top: auto; width: auto;
+    bottom: calc(6.4rem + env(safe-area-inset-bottom, 0px));
+    max-height: 38vh; transform: none;
+    animation-name: nav-apparition-bas;
+  }
+  .nav-details.replie { max-height: none; }
+  .nav-gaz { flex-direction: row; right: 0.8rem; gap: 0.5rem; }
+  .nav-gaz button { width: 52px; height: 52px; }
+  .nav-telemetrie {
+    left: 1rem; transform: none; align-items: flex-start; text-align: left;
+    max-width: calc(100vw - 13rem);
+  }
+  .nav-statut { font-size: 0.55rem; letter-spacing: 0.15em; }
+  .nav-vitesse { font-size: 1.05rem; }
+  .nav-jauge { width: 110px; }
+}
+@keyframes nav-apparition-bas { from { opacity: 0; transform: translateY(20px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-details { animation: none; }
+}

@@ -10,6 +10,7 @@ const ProjectDetail   = lazy(() => import('./components/Pages/ProjectDetail'));
 const ExperiencesPage = lazy(() => import('./components/Pages/ExperiencesPage'));
 const ParcoursPage    = lazy(() => import('./components/Pages/ParcoursPage'));
 const NotFound        = lazy(() => import('./components/Pages/NotFound'));
+const NavigationPage  = lazy(() => import('./components/Pages/NavigationPage'));
 
 function RouteFallback() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="/projets/:slug" element={<ProjectDetail />} />
           <Route path="/experiences"   element={<ExperiencesPage />} />
           <Route path="/parcours"      element={<ParcoursPage />} />
+          <Route path="/naviguer"      element={<NavigationPage />} />
           <Route path="*"              element={<NotFound />} />
         </Routes>
       </Suspense>

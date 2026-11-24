@@ -1,6 +1,11 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { COLORS, getPerformanceTier, easeInOutCubic } from '../../styles/tokens';
+import { ASTRES } from '../../lib/espace';
+import {
+  creerVaisseau, piloter, lancerSaut, avancerSaut, astreProche, entreeVide,
+} from '../../lib/pilotage';
+import { creerVaisseau3D } from './vaisseau.three';
 
 // ─── Texture etoile douce ───────────────────────────────────────────────────
 function makeStarTexture() {
@@ -210,15 +215,8 @@ const magToOpacity = (mag) => Math.max(0.55, 1.0 - mag * 0.08);
 // ─── POSITIONS DES 7 ASTRES ─────────────────────────────────────────────────
 // Constellation cosmique etiree, avec assez d'espacement pour que les
 // champs d'etoiles locaux de chaque astre ne se chevauchent pas (R_MAX ≈ 38).
-const ASTRE_POSITIONS = [
-  new THREE.Vector3(   0,    0,    0),   // 0 Hero
-  new THREE.Vector3( -45,    6,  -35),   // 1 About (Saturne)
-  new THREE.Vector3(  55,   -8,  -70),   // 2 Skills (Constellations)
-  new THREE.Vector3(  10,   18, -110),   // 3 Experience (Danse orbitale) — NEW
-  new THREE.Vector3( -55,   -4, -150),   // 4 Education (Systeme solaire) — NEW
-  new THREE.Vector3(  30,   25, -195),   // 5 Projects (was at idx 3)
-  new THREE.Vector3(  70,    0, -240),   // 6 Contact (was at idx 4)
-];
+// Les coordonnees vivent dans lib/espace.js : le pilotage du vaisseau vise les memes.
+const ASTRE_POSITIONS = ASTRES.map((a) => new THREE.Vector3(...a.position));
 
 function buildCurvePoints() {
   const curves = {};
@@ -238,7 +236,10 @@ function buildCurvePoints() {
   return curves;
 }
 
-export default function PersistentScene({ activeSectionRef }) {
+// `pilotRef` (mode « Naviguer dans mon espace ») : la camera ne suit plus les
+// sections, elle poursuit un vaisseau pilote depuis NavigationHUD. Le HUD
+// ecrit `entree` et `demandeSaut`, la scene repond dans `telemetrie`.
+export default function PersistentScene({ activeSectionRef, pilotRef }) {
   const canvasRef = useRef(null);
   const stateRef = useRef({
     mx: 0, my: 0,
@@ -790,6 +791,13 @@ export default function PersistentScene({ activeSectionRef }) {
 
     scene.fog = new THREE.FogExp2(COLORS.bg, 0.0035);
 
+    const pilote = pilotRef ? creerVaisseau() : null;
+    const vaisseau3D = pilote
+      ? creerVaisseau3D({ scene, camera, envMap, haloTex: haloTexWhite, tier })
+      : null;
+    let astreAffiche = null;
+    let astreRevele = null;
+
     const onMouse = (e) => {
       stateRef.current.mx = (e.clientX / window.innerWidth  - 0.5) * 2;
       stateRef.current.my = -(e.clientY / window.innerHeight - 0.5) * 2;
@@ -835,39 +843,75 @@ export default function PersistentScene({ activeSectionRef }) {
       prevTime = t;
       const state = stateRef.current;
 
-      const targetSection = activeSectionRef.current ?? 0;
-      if (targetSection !== state.targetMorph) {
-        state.cameraTravelFrom.copy(ASTRE_POSITIONS[state.currentMorph]);
-        state.cameraTravelTo.copy(ASTRE_POSITIONS[targetSection]);
-        const ctrl = curvePoints[`${state.currentMorph}-${targetSection}`];
-        if (ctrl) state.cameraTravelCtrl.copy(ctrl);
-        if (targetSection === 2) constRevealStart = t;
-        state.targetMorph = targetSection;
-        state.morphProgress = 0;
+      let lookAstre;
+      if (pilote) {
+        // ── Mode pilotage : physique pure (lib/pilotage), rendu dans vaisseau.three
+        const ctrl = pilotRef.current || {};
+        if (ctrl.demandeSaut !== undefined && ctrl.demandeSaut !== null) {
+          lancerSaut(pilote, ctrl.demandeSaut, { reduit: !!ctrl.reduit });
+          ctrl.demandeSaut = null;
+        }
+        piloter(pilote, ctrl.entree || entreeVide(), dt);
+        const saut = avancerSaut(pilote, dt);
+        vaisseau3D.mettreAJour(pilote, saut, dt, t);
+        // Pendant le tunnel on ne « croise » pas les astres du trajet
+        if (!saut || saut.phase === 'fini') astreAffiche = astreProche(pilote.position, astreAffiche);
+        else if (saut.phase === 'tunnel') astreAffiche = null;
+        if (astreAffiche === null) {
+          // Lumieres sur l'astre le plus proche, meme hors de portee du panneau
+          let dMin = Infinity;
+          ASTRE_POSITIONS.forEach((p) => {
+            const d = p.distanceToSquared(camera.position);
+            if (d < dMin) { dMin = d; lookAstre = p; }
+          });
+        } else {
+          lookAstre = ASTRE_POSITIONS[astreAffiche];
+        }
+        ctrl.telemetrie = {
+          vitesse: Math.abs(pilote.vitesse),
+          proche: astreAffiche,
+          saut: saut && saut.phase !== 'fini' ? { phase: saut.phase, intensite: saut.intensite, cible: saut.cible } : null,
+          position: pilote.position,
+        };
+        // Les lignes des constellations se tracent a l'approche, comme au scroll
+        if (astreAffiche === 2 && astreRevele !== 2) constRevealStart = t;
+        astreRevele = astreAffiche;
+      } else {
+        const targetSection = activeSectionRef?.current ?? 0;
+        if (targetSection !== state.targetMorph) {
+          state.cameraTravelFrom.copy(ASTRE_POSITIONS[state.currentMorph]);
+          state.cameraTravelTo.copy(ASTRE_POSITIONS[targetSection]);
+          const ctrl = curvePoints[`${state.currentMorph}-${targetSection}`];
+          if (ctrl) state.cameraTravelCtrl.copy(ctrl);
+          if (targetSection === 2) constRevealStart = t;
+          state.targetMorph = targetSection;
+          state.morphProgress = 0;
+        }
+        if (state.morphProgress < 1) {
+          state.morphProgress = Math.min(state.morphProgress + TRAVEL_INCREMENT, 1);
+        }
+
+        const p = easeInOutCubic(state.morphProgress);
+
+        // Voyage camera (Bezier quadratique)
+        quadBezier(state.cameraTravelFrom, state.cameraTravelCtrl, state.cameraTravelTo, p, vTmp);
+        vTmp.z += 7;
+        vTmp.x += state.mx * 0.6;
+        vTmp.y += state.my * 0.4;
+        camera.position.lerp(vTmp, state.morphProgress < 1 ? 1 : 0.08);
+
+        const lookTarget = state.morphProgress < 1
+          ? state.cameraTravelTo
+          : ASTRE_POSITIONS[state.targetMorph];
+        vLook.copy(lookTarget);
+        camera.lookAt(vLook);
+
+        lookAstre = state.morphProgress < 1
+          ? state.cameraTravelTo
+          : ASTRE_POSITIONS[state.targetMorph];
       }
-      if (state.morphProgress < 1) {
-        state.morphProgress = Math.min(state.morphProgress + TRAVEL_INCREMENT, 1);
-      }
-
-      const p = easeInOutCubic(state.morphProgress);
-
-      // Voyage camera (Bezier quadratique)
-      quadBezier(state.cameraTravelFrom, state.cameraTravelCtrl, state.cameraTravelTo, p, vTmp);
-      vTmp.z += 7;
-      vTmp.x += state.mx * 0.6;
-      vTmp.y += state.my * 0.4;
-      camera.position.lerp(vTmp, state.morphProgress < 1 ? 1 : 0.08);
-
-      const lookTarget = state.morphProgress < 1
-        ? state.cameraTravelTo
-        : ASTRE_POSITIONS[state.targetMorph];
-      vLook.copy(lookTarget);
-      camera.lookAt(vLook);
 
       // Lumieres globales suivent l'astre courant
-      const lookAstre = state.morphProgress < 1
-        ? state.cameraTravelTo
-        : ASTRE_POSITIONS[state.targetMorph];
       keyLight.position.set(
         lookAstre.x + 2 + Math.cos(t * 0.4) * 3,
         lookAstre.y + 5 + Math.sin(t * 0.4) * 1,
@@ -1025,7 +1069,7 @@ export default function PersistentScene({ activeSectionRef }) {
         sf.points.geometry.attributes.position.needsUpdate = true;
       });
 
-      if (state.morphProgress >= 1) {
+      if (!pilote && state.morphProgress >= 1) {
         state.currentMorph = state.targetMorph;
       }
 
@@ -1035,6 +1079,7 @@ export default function PersistentScene({ activeSectionRef }) {
 
     return () => {
       cancelAnimationFrame(animId);
+      if (vaisseau3D) vaisseau3D.dispose();
       window.removeEventListener('mousemove', onMouse);
       window.removeEventListener('resize', onResize);
       document.removeEventListener('visibilitychange', onVisibility);
@@ -1097,7 +1142,7 @@ export default function PersistentScene({ activeSectionRef }) {
       dwarfStar.geometry.dispose(); dwarfStar.material.dispose();
       dwarfArcs.forEach(a => { a.mesh.geometry.dispose(); a.mesh.material.dispose(); });
     };
-  }, [activeSectionRef]);
+  }, [activeSectionRef, pilotRef]);
 
   return (
     <canvas

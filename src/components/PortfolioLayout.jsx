@@ -54,6 +54,15 @@ export default function PortfolioLayout() {
     return () => observer.disconnect();
   }, []);
 
+  // Retour du mode vaisseau (« Lire la section » → /#about) : le routeur ne
+  // descend pas seul jusqu'a l'ancre, la section n'existe qu'apres ce rendu.
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (!id || !SECTIONS.some(s => s.id === id)) return;
+    const timer = setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'auto' }), 50);
+    return () => clearTimeout(timer);
+  }, []);
+
   const scrollTo = (id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };

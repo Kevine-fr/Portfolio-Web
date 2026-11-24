@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import { useFetch } from '../../hooks/useFetch';
 import { useTyping } from '../../hooks/useTyping';
@@ -158,6 +159,15 @@ export default function SectionHero({ onNavigate }) {
             }}>
             VOIR PROJETS
           </button>
+          <Link to="/naviguer"
+            className="hero-btn-outline"
+            style={{
+              padding: '0.8rem 1.6rem', background: 'rgba(255,217,122,0.08)', border: '1px solid #ffd97a',
+              color: '#ffd97a', fontSize: '0.7rem', letterSpacing: '0.2em', textDecoration: 'none',
+              fontFamily: "'Courier New',monospace",
+            }}>
+            ✦ EXPLORER EN VAISSEAU
+          </Link>
           {cvHref && (
             <a
               href={cvHref}
